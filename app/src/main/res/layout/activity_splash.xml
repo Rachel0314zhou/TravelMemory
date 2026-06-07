@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:background="@color/bg_light"
+    android:padding="24dp">
+
+    <LinearLayout
+        android:id="@+id/brand_container"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center">
+
+        <!-- Simple App Branding Icon Placeholder -->
+        <View
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:background="@drawable/travel_placeholder" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/welcome_title"
+            android:textSize="32sp"
+            android:textStyle="bold"
+            android:textColor="@color/primary"
+            android:layout_marginTop="16dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/splash_slogan"
+            android:textSize="15sp"
+            android:textColor="@color/text_secondary"
+            android:layout_marginTop="8dp" />
+    </LinearLayout>
+
+    <!-- First Enter Set Nickname Section (Hidden if already exists) -->
+    <LinearLayout
+        android:id="@+id/nickname_section"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:visibility="gone"
+        android:layout_marginBottom="32dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/set_nickname"
+            android:textSize="16sp"
+            android:textColor="@color/text_primary"
+            android:textStyle="bold"
+            android:layout_marginBottom="12dp" />
+
+        <EditText
+            android:id="@+id/et_nickname"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:background="@drawable/card_rounded_white"
+            android:elevation="2dp"
+            android:hint="@string/nickname_hint"
+            android:textColorHint="@color/text_hint"
+            android:textColor="@color/text_primary"
+            android:paddingHorizontal="16dp"
+            android:inputType="text"
+            android:maxLines="1"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="16dp" />
+
+        <Button
+            android:id="@+id/btn_enter"
+            android:layout_width="200dp"
+            android:layout_height="48dp"
+            android:background="@drawable/btn_primary"
+            android:text="@string/enter_app"
+            android:textColor="@color/white"
+            android:textStyle="bold"
+            android:textSize="16sp" />
+    </LinearLayout>
+
+</LinearLayout>

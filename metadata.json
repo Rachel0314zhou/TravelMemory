@@ -1,0 +1,6 @@
+{
+  "name": "旅迹本",
+  "description": "一个温情治愈的旅行记录与回忆卡片生成 App",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

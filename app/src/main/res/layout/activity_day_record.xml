@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/bg_light">
+
+    <!-- Top Action Bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:orientation="horizontal"
+        android:background="@color/primary"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="16dp">
+
+        <ImageButton
+            android:id="@+id/btn_record_back"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/abc_ic_ab_back_material"
+            app:tint="@color/white"
+            android:contentDescription="返回" />
+
+        <TextView
+            android:id="@+id/tv_record_bar_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:text="@string/day_record_title"
+            android:textSize="18sp"
+            android:textColor="@color/white"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:padding="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Travel Name display banner -->
+            <TextView
+                android:id="@+id/tv_record_trip_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="厦门之旅"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:textColor="@color/primary"
+                android:background="@drawable/card_rounded_white"
+                android:backgroundTint="@color/primary_light"
+                android:padding="12dp"
+                android:layout_marginBottom="16dp" />
+
+            <!-- Date selector -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="记录日期"
+                android:textColor="@color/text_primary"
+                android:textStyle="bold"
+                android:textSize="14sp"
+                android:layout_marginBottom="6dp" />
+
+            <TextView
+                android:id="@+id/tv_record_select_date"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:background="@drawable/card_rounded_white"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="14dp"
+                android:text="2026-06-01"
+                android:textColor="@color/black"
+                android:textStyle="bold"
+                android:layout_marginBottom="16dp" />
+
+            <!-- Mood Picker -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/mood_label"
+                android:textColor="@color/text_primary"
+                android:textStyle="bold"
+                android:textSize="14sp"
+                android:layout_marginBottom="10dp" />
+
+            <GridLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:columnCount="3"
+                android:rowCount="2"
+                android:alignmentMode="alignMargins"
+                android:layout_marginBottom="16dp">
+
+                <!-- 1. Happy -->
+                <TextView
+                    android:id="@+id/mood_happy"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_columnWeight="1"
+                    android:layout_margin="4dp"
+                    android:background="@drawable/card_rounded_white"
+                    android:gravity="center"
+                    android:text="开心 😊"
+                    android:textColor="@color/black"
+                    android:textStyle="bold"
+                    android:textSize="13sp" />
+
+                <!-- 2. Calm -->
+                <TextView
+                    android:id="@+id/mood_calm"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_columnWeight="1"
+                    android:layout_margin="4dp"
+                    android:background="@drawable/card_rounded_white"
+                    android:gravity="center"
+                    android:text="平静 😐"
+                    android:textColor="@color/black"
+                    android:textStyle="bold"
+                    android:textSize="13sp" />
+
+                <!-- 3. Tired -->
+                <TextView
+                    android:id="@+id/mood_tired"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_columnWeight="1"
+                    android:layout_margin="4dp"
+                    android:background="@drawable/card_rounded_white"
+                    android:gravity="center"
+                    android:text="疲惫 😴"
+                    android:textColor="@color/black"
+                    android:textStyle="bold"
+                    android:textSize="13sp" />
+
+                <!-- 4. Excited -->
+                <TextView
+                    android:id="@+id/mood_excited"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_columnWeight="1"
+                    android:layout_margin="4dp"
+                    android:background="@drawable/card_rounded_white"
+                    android:gravity="center"
+                    android:text="兴奋 🤩"
+                    android:textColor="@color/black"
+                    android:textStyle="bold"
+                    android:textSize="13sp" />
+
+                <!-- 5. Touched -->
+                <TextView
+                    android:id="@+id/mood_touched"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_columnWeight="1"
+                    android:layout_margin="4dp"
+                    android:background="@drawable/card_rounded_white"
+                    android:gravity="center"
+                    android:text="感动 🥹"
+                    android:textColor="@color/black"
+                    android:textStyle="bold"
+                    android:textSize="13sp" />
+
+                <!-- 6. Regret -->
+                <TextView
+                    android:id="@+id/mood_regret"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_columnWeight="1"
+                    android:layout_margin="4dp"
+                    android:background="@drawable/card_rounded_white"
+                    android:gravity="center"
+                    android:text="遗憾 😔"
+                    android:textColor="@color/black"
+                    android:textStyle="bold"
+                    android:textSize="13sp" />
+            </GridLayout>
+
+            <!-- Note input -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/note_label"
+                android:textColor="@color/text_primary"
+                android:textStyle="bold"
+                android:textSize="14sp"
+                android:layout_marginBottom="6dp" />
+
+            <EditText
+                android:id="@+id/et_record_note"
+                android:layout_width="match_parent"
+                android:layout_height="180dp"
+                android:background="@drawable/card_rounded_white"
+                android:gravity="top|start"
+                android:hint="@string/note_hint"
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_hint"
+                android:padding="14sp"
+                android:inputType="textMultiLine"
+                android:importantForAutofill="no"
+                android:layout_marginBottom="24dp" />
+
+            <!-- Action Save Button -->
+            <Button
+                android:id="@+id/btn_save_record"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:background="@drawable/btn_primary"
+                android:text="@string/save_record"
+                android:textColor="@color/white"
+                android:textStyle="bold"
+                android:textSize="16sp"
+                android:layout_marginBottom="32dp" />
+
+        </LinearLayout>
+    </ScrollView>
+
+</LinearLayout>

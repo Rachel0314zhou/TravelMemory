@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Permissions declarations -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" />
+    
+    <!-- For modern API levels (Tiramisu + API 33) gallery queries -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.TravelMemory"
+        tools:ignore="MissingApplicationIcon">
+
+        <!-- 1. Splash Launcher Activity -->
+        <activity
+            android:name="com.example.travelmemory.activity.SplashActivity"
+            android:exported="true"
+            android:theme="@style/Theme.TravelMemory">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- 2. Home Dashboard Page -->
+        <activity
+            android:name="com.example.travelmemory.activity.MainActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustPan" />
+
+        <!-- 3. Add/Edit Trip Form Page -->
+        <activity
+            android:name="com.example.travelmemory.activity.AddTripActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- 4. Trip Detail Page -->
+        <activity
+            android:name="com.example.travelmemory.activity.TripDetailActivity"
+            android:exported="false" />
+
+        <!-- 5. Daily Journal Recording Page -->
+        <activity
+            android:name="com.example.travelmemory.activity.DayRecordActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- 6. Snapshot Gallery Browser Page -->
+        <activity
+            android:name="com.example.travelmemory.activity.PhotoActivity"
+            android:exported="false" />
+
+        <!-- 7. Spot Mark Page -->
+        <activity
+            android:name="com.example.travelmemory.activity.SpotsActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- 8. Expense Ledger Page -->
+        <activity
+            android:name="com.example.travelmemory.activity.ExpenseActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- 9. Search Engine lookup Page -->
+        <activity
+            android:name="com.example.travelmemory.activity.SearchActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustPan" />
+
+        <!-- 10. Memory Postcard Share and Generation Page -->
+        <activity
+            android:name="com.example.travelmemory.activity.MemoryCardActivity"
+            android:exported="false" />
+
+        <!-- FileProvider for Sharing Image and Snapping Camera Temp Uri -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="com.example.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+    </application>
+
+</manifest>

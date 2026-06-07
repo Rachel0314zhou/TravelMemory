@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Core Brand Palette -->
+    <color name="primary">#006A67</color>
+    <color name="primary_dark">#004B48</color>
+    <color name="primary_light">#CCE8E4</color>
+    <color name="accent">#006A67</color>
+    <color name="accent_light">#CCE8E4</color>
+
+    <!-- Backgrounds and Neutrals -->
+    <color name="bg_light">#F8FBF9</color>
+    <color name="card_bg">#FFFFFF</color>
+    <color name="black">#191C1B</color>
+    <color name="text_primary">#191C1B</color>
+    <color name="text_secondary">#3F4948</color>
+    <color name="text_hint">#727978</color>
+    <color name="divider">#E0E3E1</color>
+    <color name="white">#FFFFFF</color>
+
+    <!-- Mood Tags Colors -->
+    <color name="mood_happy">#FFE082</color>
+    <color name="mood_calm">#C5E1A5</color>
+    <color name="mood_tired">#B0BEC5</color>
+    <color name="mood_excited">#FFCC80</color>
+    <color name="mood_touched">#F48FB1</color>
+    <color name="mood_regret">#90CAF9</color>
+
+    <!-- Expense Category Colors -->
+    <color name="cat_food">#FFAB91</color>
+    <color name="cat_traffic">#9FA8DA</color>
+    <color name="cat_hotel">#CE93D8</color>
+    <color name="cat_ticket">#81C784</color>
+    <color name="cat_shopping">#FFF59D</color>
+    <color name="cat_other">#B0BEC5</color>
+</resources>
