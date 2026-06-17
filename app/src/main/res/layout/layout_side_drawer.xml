@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <View
+        android:id="@+id/drawer_scrim"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#66000000"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:id="@+id/layout_side_drawer"
+        android:layout_width="288dp"
+        android:layout_height="match_parent"
+        android:background="@color/white"
+        android:elevation="8dp"
+        android:orientation="vertical"
+        android:padding="20dp"
+        android:translationX="-288dp">
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="72dp"
+            android:layout_height="72dp"
+            app:cardBackgroundColor="@color/primary_light"
+            app:cardCornerRadius="36dp"
+            app:cardElevation="0dp">
+
+            <ImageView
+                android:id="@+id/iv_drawer_avatar"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:contentDescription="侧边栏头像"
+                android:padding="8dp"
+                android:scaleType="centerCrop"
+                android:src="@drawable/travel_placeholder" />
+        </androidx.cardview.widget.CardView>
+
+        <TextView
+            android:id="@+id/tv_drawer_nickname"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="旅行者"
+            android:textColor="@color/text_primary"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tv_drawer_username"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="账号：demo"
+            android:textColor="@color/text_secondary"
+            android:textSize="13sp" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="18dp"
+            android:layout_marginBottom="12dp"
+            android:background="@color/divider" />
+
+        <TextView android:id="@+id/menu_my_trips" style="@style/DrawerMenuText" android:text="首页" />
+        <TextView android:id="@+id/menu_pre_trip" style="@style/DrawerMenuText" android:text="行前准备" />
+        <TextView android:id="@+id/menu_during_trip" style="@style/DrawerMenuText" android:text="旅行记录" />
+        <TextView android:id="@+id/menu_post_trip" style="@style/DrawerMenuText" android:text="旅行整理" />
+        <TextView android:id="@+id/menu_memory" style="@style/DrawerMenuText" android:text="回忆/回顾" />
+        <TextView android:id="@+id/menu_settings" style="@style/DrawerMenuText" android:text="设置" />
+
+        <Space
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <TextView
+            android:id="@+id/menu_logout"
+            style="@style/DrawerMenuText"
+            android:text="退出登录"
+            android:textColor="#B3261E" />
+    </LinearLayout>
+</merge>

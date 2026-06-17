@@ -1,19 +1,17 @@
-<resources>
-    <string name="app_name">旅迹本</string>
-    <string name="welcome_title">旅迹本</string>
+﻿<resources>
+    <string name="app_name">旅行记忆本</string>
+    <string name="welcome_title">旅行记忆本</string>
     <string name="splash_slogan">记录旅途，也收藏当时的自己</string>
     <string name="set_nickname">给自己起一个旅行昵称吧</string>
     <string name="nickname_hint">请输入昵称</string>
-    <string name="enter_app">开启旅意</string>
+    <string name="enter_app">开启旅行记忆</string>
     <string name="no_nickname_error">请输入昵称以继续</string>
 
-    <!-- Main -->
     <string name="hello_user">你好，%s</string>
     <string name="add_trip">新建旅行</string>
-    <string name="search_hint">搜索旅行名称、目的地或日记内容...</string>
+    <string name="search_hint">搜索旅行、地点、日记</string>
     <string name="empty_trips">还没有旅行记录，开始记录第一段旅程吧</string>
 
-    <!-- Add Trip -->
     <string name="add_trip_title">添加旅行</string>
     <string name="edit_trip_title">编辑旅行</string>
     <string name="trip_name_label">旅行名称</string>
@@ -24,64 +22,57 @@
     <string name="end_date_label">结束日期</string>
     <string name="cover_image_label">旅行封面图</string>
     <string name="choose_album">从相册选择</string>
-    <string name="take_photo">拍照导入</string>
+    <string name="take_photo">从相册选择</string>
     <string name="save">保存</string>
     <string name="please_fill_fields">请完整填写基本字段</string>
 
-    <!-- Detail -->
     <string name="trip_detail_title">旅行详情</string>
     <string name="days_format">%d 天</string>
     <string name="stats_photos">照片</string>
-    <string name="stats_spots">景点打卡</string>
+    <string name="stats_spots">打卡</string>
     <string name="stats_expenses">总花费</string>
-    <string name="menu_daily_record">每日笔记</string>
+    <string name="menu_daily_record">旅行日记</string>
     <string name="menu_photo">相册</string>
-    <string name="menu_spots">景点打卡</string>
-    <string name="menu_expense">记账</string>
-    <string name="menu_generate_card">回忆卡片</string>
+    <string name="menu_spots">景点/美食打卡</string>
+    <string name="menu_expense">记录花费</string>
+    <string name="menu_generate_card">生成回忆卡片</string>
     <string name="edit_trip">编辑</string>
     <string name="delete_trip">删除</string>
     <string name="delete_confirm_title">确定要删除吗？</string>
-    <string name="delete_confirm_msg">该操作会永久删除此次旅行的所有信息，包括每日记、相片、打卡点及账单，不可撤销！</string>
+    <string name="delete_confirm_msg">该操作会移除本次旅行及关联的旅行日记、照片、打卡点和账单数据。</string>
 
-    <!-- Day Record -->
-    <string name="day_record_title">每日记录</string>
+    <string name="day_record_title">旅行日记</string>
     <string name="note_label">今日文字笔记</string>
     <string name="note_hint">记录今天的见闻、趣事与感想...</string>
     <string name="mood_label">今天的心情</string>
     <string name="save_record">保存今日记录</string>
 
-    <!-- Photo -->
     <string name="photo_title">旅行相册</string>
-    <string name="photos_empty">相册空空如也，拍张照片或导入来丰富它吧！</string>
+    <string name="photos_empty">还没有照片，添加第一张旅行照片吧</string>
 
-    <!-- Spots -->
-    <string name="spots_title">打卡足迹</string>
+    <string name="spots_title">景点/美食打卡</string>
     <string name="spot_name_hint">输入打卡地点，如“鼓浪屿”</string>
     <string name="spot_type_label">类型选择</string>
-    <string name="spot_note_hint">写写评价，如“海风很舒服，推荐鼓浪屿小吃！”</string>
+    <string name="spot_note_hint">写写评价，如“海风很舒服，推荐小吃！”</string>
     <string name="favorite_btn">最爱标记</string>
     <string name="add_spot">添加打卡点</string>
-    <string name="spots_empty">还没有在这里打过卡哦</string>
+    <string name="spots_empty">还没有打卡记录，记录一个到过的地点吧</string>
 
-    <!-- Expense -->
-    <string name="expense_title">记账本</string>
+    <string name="expense_title">记录花费</string>
     <string name="category_label">分类</string>
-    <string name="amount_hint">数额 (¥)</string>
-    <string name="expense_empty">还没有记录任何支出哦</string>
+    <string name="amount_hint">金额 (¥)</string>
+    <string name="expense_empty">还没有记录花费，记下第一笔旅行支出吧</string>
     <string name="expense_stats">分类消费明细</string>
     <string name="add_expense">添加一笔</string>
 
-    <!-- Search -->
-    <string name="search_title">搜索旅境</string>
+    <string name="search_title">搜索旅程</string>
     <string name="search_btn">搜索</string>
-    <string name="filter_mood_label">按心情过滤</string>
-    <string name="search_empty">未检索到符合条件的旅行或日常回忆</string>
+    <string name="filter_mood_label">按心情筛选</string>
+    <string name="search_empty">没有找到相关内容，可以试试搜索旅行名称、地点或日记关键词。</string>
 
-    <!-- Memory Card -->
-    <string name="memory_card_title">旅梦回忆画框</string>
+    <string name="memory_card_title">旅行回忆卡片</string>
     <string name="share_card">分享卡片图片</string>
-    <string name="save_to_local">保存到相册</string>
-    <string name="save_success">图片已成功保存到本地！</string>
-    <string name="share_chooser_title">分享我的旅迹回忆</string>
+    <string name="save_to_local">保存到本地</string>
+    <string name="save_success">图片已成功保存到本地：</string>
+    <string name="share_chooser_title">分享我的旅行回忆</string>
 </resources>

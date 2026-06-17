@@ -1,90 +1,114 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="8dp"
-    android:layout_marginVertical="8dp"
+    android:layout_marginVertical="7dp"
+    app:cardBackgroundColor="@color/white"
     app:cardCornerRadius="24dp"
-    app:cardElevation="0dp"
+    app:cardElevation="2dp"
     app:strokeColor="@color/divider"
-    app:strokeWidth="1.2dp"
-    app:cardBackgroundColor="@color/white">
+    app:strokeWidth="1dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <!-- Trip Cover image -->
         <ImageView
             android:id="@+id/iv_trip_cover"
             android:layout_width="match_parent"
-            android:layout_height="160dp"
+            android:layout_height="158dp"
+            android:contentDescription="旅行封面"
             android:scaleType="centerCrop"
-            android:src="@drawable/travel_placeholder"
-            android:contentDescription="旅行封面" />
+            android:src="@drawable/travel_placeholder" />
 
-        <!-- Info container -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="12dp">
+            android:padding="14dp">
 
             <TextView
                 android:id="@+id/tv_trip_name"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="毕业前的厦门之旅"
-                android:textSize="17sp"
-                android:textStyle="bold"
-                android:textColor="@color/black" />
+                android:text="厦门之旅"
+                android:textColor="@color/text_primary"
+                android:textSize="18sp"
+                android:textStyle="bold" />
 
             <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp">
 
-                <!-- Destination label -->
                 <TextView
                     android:id="@+id/tv_trip_destination"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="📍 厦门"
+                    android:layout_alignParentStart="true"
+                    android:text="目的地：厦门"
+                    android:textColor="@color/primary_dark"
                     android:textSize="13sp"
-                    android:textColor="@color/primary"
-                    android:textStyle="bold"
-                    android:layout_alignParentStart="true" />
+                    android:textStyle="bold" />
 
-                <!-- Days count label in bubble -->
                 <TextView
                     android:id="@+id/tv_trip_days"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_alignParentEnd="true"
+                    android:background="@drawable/card_rounded_primary_light"
+                    android:paddingHorizontal="10dp"
+                    android:paddingVertical="3dp"
                     android:text="4 天"
+                    android:textColor="@color/primary_dark"
                     android:textSize="11sp"
-                    android:textColor="@color/primary"
-                    android:textStyle="bold"
-                    android:background="@drawable/card_rounded_white"
-                    android:backgroundTint="@color/primary_light"
-                    android:paddingHorizontal="8dp"
-                    android:paddingVertical="2dp"
-                    android:layout_alignParentEnd="true" />
+                    android:textStyle="bold" />
             </RelativeLayout>
 
-            <!-- Date Range -->
             <TextView
                 android:id="@+id/tv_trip_dates"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
                 android:text="2026-06-01 ~ 2026-06-04"
-                android:textSize="12sp"
                 android:textColor="@color/text_secondary"
-                android:layout_marginTop="6dp" />
+                android:textSize="12sp" />
 
+            <TextView
+                android:id="@+id/tv_trip_status"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/tag_primary"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="6dp"
+                android:text="当前阶段：旅行记录"
+                android:textColor="@color/text_primary"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tv_trip_packing_hint"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="行李已准备完成"
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/tv_trip_plan_hint"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="还有 0 个计划未完成"
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp"
+                android:visibility="gone" />
         </LinearLayout>
-
     </LinearLayout>
-
 </com.google.android.material.card.MaterialCardView>

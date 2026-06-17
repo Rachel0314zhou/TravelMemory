@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="64dp"
+    android:background="@color/white"
+    android:elevation="8dp"
+    android:gravity="center"
+    android:orientation="horizontal"
+    android:paddingHorizontal="8dp"
+    android:paddingVertical="8dp">
+
+    <TextView
+        android:id="@+id/bottom_nav_trip"
+        style="@style/BottomNavText"
+        android:text="首页" />
+
+    <TextView
+        android:id="@+id/bottom_nav_search"
+        style="@style/BottomNavText"
+        android:text="搜索" />
+
+    <TextView
+        android:id="@+id/bottom_nav_memory"
+        style="@style/BottomNavText"
+        android:text="回忆" />
+
+    <TextView
+        android:id="@+id/bottom_nav_profile"
+        style="@style/BottomNavText"
+        android:text="设置" />
+</LinearLayout>

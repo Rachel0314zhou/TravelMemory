@@ -1,11 +1,11 @@
 package com.example.travelmemory.activity;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
@@ -15,25 +15,27 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.R;
 import com.example.travelmemory.adapter.SearchResultAdapter;
 import com.example.travelmemory.db.DatabaseHelper;
-import com.example.travelmemory.model.Trip;
+import com.example.travelmemory.model.SearchResult;
+import com.example.travelmemory.utils.BottomNavHelper;
+import com.example.travelmemory.utils.DrawerHelper;
+import com.example.travelmemory.utils.SessionManager;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 public class SearchActivity extends AppCompatActivity {
 
-    private DatabaseHelper dbHelper;
+    private static final String MOOD_ALL = "\u5168\u90e8";
 
+    private DatabaseHelper dbHelper;
+    private SessionManager sessionManager;
+    private int currentUserId = -1;
     private EditText etSearchInput;
-    private Button btnSearchSubmit;
     private RecyclerView rvSearchResults;
     private TextView emptyState;
-
-    private String selectedMoodFilter = null; // null means no mood filter
-
-    // Mood filters map
-    private final Map<String, TextView> moodFilterViews = new HashMap<>();
+    private DrawerHelper drawerHelper;
+    private final Map<String, TextView> moodFilterViews = new LinkedHashMap<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,48 +43,44 @@ public class SearchActivity extends AppCompatActivity {
         setContentView(R.layout.activity_search);
 
         dbHelper = new DatabaseHelper(this);
-
+        sessionManager = new SessionManager(this);
+        currentUserId = sessionManager.getCurrentUserId();
+        if (currentUserId <= 0) {
+            goToLogin();
+            return;
+        }
         etSearchInput = findViewById(R.id.et_search_input);
-        btnSearchSubmit = findViewById(R.id.btn_search_submit);
+        drawerHelper = new DrawerHelper(this);
+        drawerHelper.setup();
+        Button btnSearchSubmit = findViewById(R.id.btn_search_submit);
         rvSearchResults = findViewById(R.id.rv_search_results);
         emptyState = findViewById(R.id.search_empty_view);
-
-        findViewById(R.id.btn_search_back).setOnClickListener(v -> finish());
-
+        findViewById(R.id.btn_search_back).setOnClickListener(v -> drawerHelper.open());
         rvSearchResults.setLayoutManager(new LinearLayoutManager(this));
+        BottomNavHelper.setup(this, BottomNavHelper.TAB_SEARCH);
 
-        // Mood filters mapping
-        moodFilterViews.put("全部", findViewById(R.id.filter_all));
-        moodFilterViews.put("开心 😊", findViewById(R.id.filter_happy));
-        moodFilterViews.put("平静 😐", findViewById(R.id.filter_calm));
-        moodFilterViews.put("疲惫 😴", findViewById(R.id.filter_tired));
-        moodFilterViews.put("兴奋 🤩", findViewById(R.id.filter_excited));
-        moodFilterViews.put("感动 🥹", findViewById(R.id.filter_touched));
-        moodFilterViews.put("遗憾 😔", findViewById(R.id.filter_regret));
-
+        moodFilterViews.put(MOOD_ALL, findViewById(R.id.filter_all));
+        moodFilterViews.put("\u5f00\u5fc3", findViewById(R.id.filter_happy));
+        moodFilterViews.put("\u5e73\u9759", findViewById(R.id.filter_calm));
+        moodFilterViews.put("\u75b2\u60eb", findViewById(R.id.filter_tired));
+        moodFilterViews.put("\u5174\u594b", findViewById(R.id.filter_excited));
+        moodFilterViews.put("\u611f\u52a8", findViewById(R.id.filter_touched));
+        moodFilterViews.put("\u9057\u61be", findViewById(R.id.filter_regret));
         setupMoodFilters();
 
-        // Submit button
         btnSearchSubmit.setOnClickListener(v -> executeTextSearch());
-
-        // Default: display all trips
-        displayTrips(dbHelper.getAllTrips());
+        displayResults(dbHelper.getTripSearchResultsForUser(currentUserId));
     }
 
     private void setupMoodFilters() {
         for (Map.Entry<String, TextView> entry : moodFilterViews.entrySet()) {
-            String moodStr = entry.getKey();
-            TextView view = entry.getValue();
-            view.setOnClickListener(v -> {
-                highlightMoodFilter(moodStr);
-                if (moodStr.equals("全部")) {
-                    selectedMoodFilter = null;
-                    executeTextSearch(); // run text keyword query
+            String mood = entry.getKey();
+            entry.getValue().setOnClickListener(v -> {
+                highlightMoodFilter(mood);
+                if (MOOD_ALL.equals(mood)) {
+                    executeTextSearch();
                 } else {
-                    selectedMoodFilter = moodStr;
-                    // Run mood query directly
-                    List<Trip> list = dbHelper.filterTripsByMood(moodStr);
-                    displayTrips(list);
+                    displayResults(dbHelper.moodSearchResultsForUser(currentUserId, mood));
                 }
             });
         }
@@ -90,9 +88,8 @@ public class SearchActivity extends AppCompatActivity {
 
     private void highlightMoodFilter(String activeMood) {
         for (Map.Entry<String, TextView> entry : moodFilterViews.entrySet()) {
-            String text = entry.getKey();
             TextView view = entry.getValue();
-            if (text.equals(activeMood)) {
+            if (entry.getKey().equals(activeMood)) {
                 view.setBackground(ContextCompat.getDrawable(this, R.drawable.btn_primary));
                 view.setTextColor(ContextCompat.getColor(this, R.color.white));
             } else {
@@ -104,24 +101,25 @@ public class SearchActivity extends AppCompatActivity {
 
     private void executeTextSearch() {
         String keyword = etSearchInput.getText().toString().trim();
-        List<Trip> list;
-        if (keyword.isEmpty()) {
-            list = dbHelper.getAllTrips();
-        } else {
-            list = dbHelper.searchTrips(keyword);
-        }
-        displayTrips(list);
+        List<SearchResult> list = keyword.isEmpty() ? dbHelper.getTripSearchResultsForUser(currentUserId) : dbHelper.searchResultsForUser(currentUserId, keyword);
+        displayResults(list);
     }
 
-    private void displayTrips(List<Trip> list) {
-        if (list.isEmpty()) {
+    private void displayResults(List<SearchResult> list) {
+        if (list == null || list.isEmpty()) {
             rvSearchResults.setVisibility(View.GONE);
             emptyState.setVisibility(View.VISIBLE);
         } else {
             emptyState.setVisibility(View.GONE);
             rvSearchResults.setVisibility(View.VISIBLE);
-            SearchResultAdapter adapter = new SearchResultAdapter(this, list);
-            rvSearchResults.setAdapter(adapter);
+            rvSearchResults.setAdapter(new SearchResultAdapter(this, list));
         }
+    }
+
+    private void goToLogin() {
+        Intent intent = new Intent(this, LoginActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
     }
 }

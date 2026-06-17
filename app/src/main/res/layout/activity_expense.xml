@@ -28,7 +28,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
-            android:text="@string/expense_title"
+            android:text="记录花费"
             android:textSize="18sp"
             android:textColor="@color/white"
             android:textStyle="bold" />
@@ -48,8 +48,8 @@
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="3dp"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="2dp"
                 android:layout_margin="4dp"
                 app:cardBackgroundColor="@color/primary_dark">
 
@@ -63,7 +63,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="旅行总开销"
+                        android:text="本次旅行总花费"
                         android:textSize="13sp"
                         android:textColor="@color/primary_light" />
 
@@ -84,7 +84,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_margin="4dp"
-                app:cardCornerRadius="12dp"
+                app:cardCornerRadius="18dp"
                 app:cardElevation="2dp"
                 app:cardBackgroundColor="@color/white">
 
@@ -97,10 +97,10 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/expense_stats"
-                        android:textSize="12sp"
+                        android:text="分类消费明细"
+                        android:textSize="15sp"
                         android:textStyle="bold"
-                        android:textColor="@color/primary"
+                        android:textColor="@color/text_primary"
                         android:layout_marginBottom="8dp" />
 
                     <GridLayout
@@ -126,7 +126,7 @@
                 android:layout_height="wrap_content"
                 android:layout_margin="4dp"
                 android:layout_marginTop="12dp"
-                app:cardCornerRadius="12dp"
+                app:cardCornerRadius="18dp"
                 app:cardElevation="3dp"
                 app:cardBackgroundColor="@color/white">
 
@@ -139,9 +139,9 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="新增一笔明细支出"
-                        android:textSize="14sp"
-                        android:textColor="@color/primary"
+                        android:text="添加一笔旅行花费"
+                        android:textSize="16sp"
+                        android:textColor="@color/text_primary"
                         android:textStyle="bold"
                         android:layout_marginBottom="8dp" />
 
@@ -157,8 +157,7 @@
                             android:layout_width="0dp"
                             android:layout_height="44dp"
                             android:layout_weight="1"
-                            android:background="@drawable/card_rounded_white"
-                            android:backgroundTint="@color/bg_light"
+                            android:background="@drawable/bg_search_box"
                             android:hint="@string/amount_hint"
                             android:textColor="@color/black"
                             android:textColorHint="@color/text_hint"
@@ -171,8 +170,7 @@
                             android:layout_width="120dp"
                             android:layout_height="44dp"
                             android:layout_marginStart="8dp"
-                            android:background="@drawable/card_rounded_white"
-                            android:backgroundTint="@color/bg_light" />
+                            android:background="@drawable/bg_search_box" />
                     </LinearLayout>
 
                     <LinearLayout
@@ -187,9 +185,8 @@
                             android:layout_width="0dp"
                             android:layout_height="44dp"
                             android:layout_weight="1"
-                            android:background="@drawable/card_rounded_white"
-                            android:backgroundTint="@color/bg_light"
-                            android:hint="备注: 如“日光岩轮渡票”"
+                            android:background="@drawable/bg_search_box"
+                            android:hint="备注：如日光岩轮渡票"
                             android:textColor="@color/text_primary"
                             android:textColorHint="@color/text_hint"
                             android:paddingHorizontal="12dp"
@@ -201,8 +198,7 @@
                             android:layout_width="100dp"
                             android:layout_height="44dp"
                             android:layout_marginStart="8dp"
-                            android:background="@drawable/card_rounded_white"
-                            android:backgroundTint="@color/bg_light"
+                            android:background="@drawable/bg_search_box"
                             android:gravity="center"
                             android:text="2026-06-01"
                             android:textColor="@color/black"
@@ -215,7 +211,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="42dp"
                         android:background="@drawable/btn_primary"
-                        android:text="💰 确认记账"
+                        android:text="保存花费"
                         android:textColor="@color/white"
                         android:textStyle="bold" />
                 </LinearLayout>
@@ -225,7 +221,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="明细账单"
+                android:text="花费明细"
                 android:textSize="14sp"
                 android:textColor="@color/black"
                 android:textStyle="bold"

@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg_light"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="我的旅行画像"
+                android:textColor="@color/text_primary"
+                android:textSize="24sp"
+                android:textStyle="bold" />
+
+            <ImageButton
+                android:id="@+id/btn_questionnaire_close"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@drawable/card_rounded_white"
+                android:contentDescription="关闭"
+                android:src="@android:drawable/ic_menu_close_clear_cancel" />
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="填写几个简单信息，让个人主页更完整。"
+            android:textColor="@color/text_secondary"
+            android:textSize="14sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:background="@drawable/card_rounded_white"
+            android:orientation="vertical"
+            android:padding="18dp">
+
+            <EditText
+                android:id="@+id/et_profile_nickname"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:background="@drawable/bg_search_box"
+                android:hint="昵称"
+                android:paddingHorizontal="14dp"
+                android:singleLine="true"
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_hint"
+                android:textSize="14sp" />
+
+            <EditText
+                android:id="@+id/et_profile_age"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_search_box"
+                android:hint="年龄"
+                android:paddingHorizontal="14dp"
+                android:singleLine="true"
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_hint"
+                android:textSize="14sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="性别"
+                android:textColor="@color/text_primary"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <RadioGroup
+                android:id="@+id/rg_profile_gender"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal">
+
+                <RadioButton
+                    android:id="@+id/rb_gender_female"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="女" />
+
+                <RadioButton
+                    android:id="@+id/rb_gender_male"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:text="男" />
+
+                <RadioButton
+                    android:id="@+id/rb_gender_other"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:text="其他" />
+            </RadioGroup>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="旅行偏好"
+                android:textColor="@color/text_primary"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:id="@+id/layout_profile_preference"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="vertical">
+
+                <CheckBox
+                    android:id="@+id/cb_preference_nature"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="自然风光" />
+
+                <CheckBox
+                    android:id="@+id/cb_preference_city"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="城市漫游" />
+
+                <CheckBox
+                    android:id="@+id/cb_preference_food"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="美食探店" />
+
+                <CheckBox
+                    android:id="@+id/cb_preference_history"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="人文历史" />
+
+                <CheckBox
+                    android:id="@+id/cb_preference_vacation"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="轻松度假" />
+
+                <CheckBox
+                    android:id="@+id/cb_preference_fast"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="特种兵旅行" />
+
+                <CheckBox
+                    android:id="@+id/cb_preference_family"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="亲子/家庭" />
+
+                <CheckBox
+                    android:id="@+id/cb_preference_other"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="其他" />
+
+                <EditText
+                    android:id="@+id/et_preference_other"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="6dp"
+                    android:background="@drawable/bg_search_box"
+                    android:hint="输入自定义旅行偏好"
+                    android:paddingHorizontal="14dp"
+                    android:singleLine="true"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/text_hint"
+                    android:textSize="14sp"
+                    android:visibility="gone" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/btn_questionnaire_save"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:layout_marginTop="18dp"
+            android:background="@drawable/btn_primary"
+            android:gravity="center"
+            android:text="保存档案"
+            android:textColor="@color/white"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/btn_questionnaire_skip"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/card_rounded_primary_light"
+            android:gravity="center"
+            android:text="跳过"
+            android:textColor="@color/primary_dark"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+</ScrollView>

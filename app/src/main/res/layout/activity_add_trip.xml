@@ -5,7 +5,6 @@
     android:orientation="vertical"
     android:background="@color/bg_light">
 
-    <!-- Top Action Bar -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="56dp"
@@ -27,7 +26,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
-            android:text="@string/add_trip_title"
+            android:text="新建旅行"
             android:textSize="18sp"
             android:textColor="@color/white"
             android:textStyle="bold" />
@@ -44,126 +43,187 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- Name Input Card -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/trip_name_label"
-                android:textColor="@color/text_primary"
-                android:textStyle="bold"
-                android:textSize="14sp"
-                android:layout_marginBottom="6dp" />
-
-            <EditText
-                android:id="@+id/et_trip_name"
+            <LinearLayout
+                android:id="@+id/layout_regret_reminder"
                 android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:background="@drawable/card_rounded_white"
-                android:hint="@string/trip_name_hint"
-                android:textColor="@color/text_primary"
-                android:textColorHint="@color/text_hint"
-                android:paddingHorizontal="14dp"
-                android:inputType="text"
-                android:maxLines="1"
-                android:layout_marginBottom="16dp" />
-
-            <!-- Destination Card -->
-            <TextView
-                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/destination_label"
-                android:textColor="@color/text_primary"
-                android:textStyle="bold"
-                android:textSize="14sp"
-                android:layout_marginBottom="6dp" />
+                android:layout_marginBottom="16dp"
+                android:background="@drawable/card_rounded_primary_light"
+                android:orientation="vertical"
+                android:padding="14dp"
+                android:visibility="gone">
 
-            <EditText
-                android:id="@+id/et_destination"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:background="@drawable/card_rounded_white"
-                android:hint="@string/destination_hint"
-                android:textColor="@color/text_primary"
-                android:textColorHint="@color/text_hint"
-                android:paddingHorizontal="14dp"
-                android:inputType="text"
-                android:maxLines="1"
-                android:layout_marginBottom="16dp" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="你还有一些上次没完成的小遗憾，要不要这次补上？"
+                    android:textColor="@color/text_primary"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
 
-            <!-- Dates Card Row -->
+                <TextView
+                    android:id="@+id/tv_selected_regrets"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="尚未选择遗憾"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="13sp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:gravity="end"
+                    android:orientation="horizontal">
+
+                    <Button
+                        android:id="@+id/btn_view_regrets"
+                        android:layout_width="wrap_content"
+                        android:layout_height="40dp"
+                        android:text="查看遗憾" />
+
+                    <Button
+                        android:id="@+id/btn_pick_regrets"
+                        android:layout_width="wrap_content"
+                        android:layout_height="40dp"
+                        android:layout_marginStart="8dp"
+                        android:text="加入计划" />
+                </LinearLayout>
+            </LinearLayout>
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:baselineAligned="false"
-                android:layout_marginBottom="16dp">
+                android:background="@drawable/card_rounded_white"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="基本信息"
+                    android:textColor="@color/text_primary"
+                    android:textSize="17sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:layout_marginBottom="6dp"
+                    android:text="旅行名称"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <EditText
+                    android:id="@+id/et_trip_name"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:background="@drawable/bg_search_box"
+                    android:hint="给这段旅行起个名字"
+                    android:inputType="text"
+                    android:maxLines="1"
+                    android:paddingHorizontal="14dp"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/text_hint" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:layout_marginBottom="6dp"
+                    android:text="目的地"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <EditText
+                    android:id="@+id/et_destination"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:background="@drawable/bg_search_box"
+                    android:hint="例如 厦门"
+                    android:inputType="text"
+                    android:maxLines="1"
+                    android:paddingHorizontal="14dp"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/text_hint" />
 
                 <LinearLayout
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:layout_marginEnd="8dp">
+                    android:layout_marginTop="14dp"
+                    android:baselineAligned="false"
+                    android:orientation="horizontal">
 
-                    <TextView
-                        android:layout_width="wrap_content"
+                    <LinearLayout
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:text="@string/start_date_label"
-                        android:textColor="@color/text_primary"
-                        android:textStyle="bold"
-                        android:textSize="14sp"
-                        android:layout_marginBottom="6dp" />
+                        android:layout_marginEnd="8dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
 
-                    <TextView
-                        android:id="@+id/tv_start_date"
-                        android:layout_width="match_parent"
-                        android:layout_height="48dp"
-                        android:background="@drawable/card_rounded_white"
-                        android:hint="选择开始日期"
-                        android:textColor="@color/text_primary"
-                        android:textColorHint="@color/text_hint"
-                        android:paddingHorizontal="14dp"
-                        android:gravity="center_vertical" />
-                </LinearLayout>
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="6dp"
+                            android:text="开始日期"
+                            android:textColor="@color/text_primary"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
 
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:layout_marginStart="8dp">
+                        <TextView
+                            android:id="@+id/tv_start_date"
+                            android:layout_width="match_parent"
+                            android:layout_height="48dp"
+                            android:background="@drawable/bg_search_box"
+                            android:gravity="center_vertical"
+                            android:hint="选择开始日期"
+                            android:paddingHorizontal="14dp"
+                            android:textColor="@color/text_primary"
+                            android:textColorHint="@color/text_hint" />
+                    </LinearLayout>
 
-                    <TextView
-                        android:layout_width="wrap_content"
+                    <LinearLayout
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:text="@string/end_date_label"
-                        android:textColor="@color/text_primary"
-                        android:textStyle="bold"
-                        android:textSize="14sp"
-                        android:layout_marginBottom="6dp" />
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
 
-                    <TextView
-                        android:id="@+id/tv_end_date"
-                        android:layout_width="match_parent"
-                        android:layout_height="48dp"
-                        android:background="@drawable/card_rounded_white"
-                        android:hint="选择结束日期"
-                        android:textColor="@color/text_primary"
-                        android:textColorHint="@color/text_hint"
-                        android:paddingHorizontal="14dp"
-                        android:gravity="center_vertical" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="6dp"
+                            android:text="结束日期"
+                            android:textColor="@color/text_primary"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tv_end_date"
+                            android:layout_width="match_parent"
+                            android:layout_height="48dp"
+                            android:background="@drawable/bg_search_box"
+                            android:gravity="center_vertical"
+                            android:hint="选择结束日期"
+                            android:paddingHorizontal="14dp"
+                            android:textColor="@color/text_primary"
+                            android:textColorHint="@color/text_hint" />
+                    </LinearLayout>
                 </LinearLayout>
-
             </LinearLayout>
 
-            <!-- Image Selection Card -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/cover_image_label"
+                android:text="封面图"
                 android:textColor="@color/text_primary"
                 android:textStyle="bold"
                 android:textSize="14sp"
+                android:layout_marginTop="16dp"
                 android:layout_marginBottom="6dp" />
 
             <LinearLayout
@@ -171,7 +231,7 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:background="@drawable/card_rounded_white"
-                android:padding="12dp"
+                android:padding="14dp"
                 android:gravity="center"
                 android:layout_marginBottom="24dp">
 
@@ -187,46 +247,30 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
+                    android:orientation="vertical"
                     android:gravity="center">
 
                     <Button
                         android:id="@+id/btn_choose_album"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginEnd="6dp"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
                         android:background="@drawable/btn_primary"
-                        android:text="@string/choose_album"
-                        android:textColor="@color/white" />
-
-                    <Button
-                        android:id="@+id/btn_take_photo"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginStart="6dp"
-                        android:background="@drawable/btn_primary"
-                        android:backgroundTint="@color/accent"
-                        android:text="@string/take_photo"
+                        android:text="从相册选择封面"
                         android:textColor="@color/white" />
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Submit Button -->
             <Button
                 android:id="@+id/btn_save_trip"
                 android:layout_width="match_parent"
                 android:layout_height="50dp"
                 android:background="@drawable/btn_primary"
                 android:backgroundTint="@color/primary"
-                android:text="@string/save"
+                android:text="保存"
                 android:textColor="@color/white"
                 android:textStyle="bold"
                 android:textSize="16sp"
                 android:layout_marginBottom="32dp" />
-
         </LinearLayout>
     </ScrollView>
-
 </LinearLayout>

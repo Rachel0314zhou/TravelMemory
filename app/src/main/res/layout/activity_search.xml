@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+<LinearLayout
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -20,9 +24,9 @@
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/abc_ic_ab_back_material"
+            android:src="@android:drawable/ic_menu_sort_by_size"
             app:tint="@color/white"
-            android:contentDescription="返回" />
+            android:contentDescription="打开菜单" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -52,8 +56,8 @@
                 android:layout_width="0dp"
                 android:layout_height="48dp"
                 android:layout_weight="1"
-                android:background="@drawable/card_rounded_white"
-                android:hint="@string/search_hint"
+                android:background="@drawable/bg_search_box"
+                android:hint="搜索旅行、地点、日记"
                 android:textColor="@color/black"
                 android:textColorHint="@color/text_hint"
                 android:paddingHorizontal="16dp"
@@ -76,7 +80,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/filter_mood_label"
+            android:text="按心情筛选"
             android:textSize="12sp"
             android:textColor="@color/primary"
             android:textStyle="bold"
@@ -125,11 +129,16 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:text="@string/search_empty"
+            android:text="没有找到相关内容\n可以试试搜索旅行名称、地点或日记关键词。"
             android:gravity="center"
             android:textSize="14sp"
             android:textColor="@color/text_secondary"
             android:visibility="gone" />
     </FrameLayout>
 
-</LinearLayout>
+    <include layout="@layout/layout_bottom_nav" />
+
+    </LinearLayout>
+
+    <include layout="@layout/layout_side_drawer" />
+</FrameLayout>

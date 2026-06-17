@@ -3,7 +3,6 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Permissions declarations -->
-    <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" />
     
@@ -35,6 +34,73 @@
             android:name="com.example.travelmemory.activity.MainActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustPan" />
+
+        <activity
+            android:name="com.example.travelmemory.activity.LoginActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name="com.example.travelmemory.activity.RegisterActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name="com.example.travelmemory.activity.SettingsActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name="com.example.travelmemory.activity.PersonalProfileActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name="com.example.travelmemory.activity.ProfileQuestionnaireActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name="com.example.travelmemory.activity.MemoryListActivity"
+            android:exported="false" />
+
+        <activity
+            android:name="com.example.travelmemory.activity.StatisticsActivity"
+            android:exported="false" />
+
+        <activity
+            android:name="com.example.travelmemory.activity.FeatureHubActivity"
+            android:exported="false" />
+
+        <activity
+            android:name="com.example.travelmemory.activity.TripTypeActivity"
+            android:exported="false" />
+
+        <activity
+            android:name="com.example.travelmemory.activity.SelectTripActivity"
+            android:exported="false" />
+
+        <activity
+            android:name="com.example.travelmemory.activity.PreTripPlanActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name="com.example.travelmemory.activity.DuringTripActivity"
+            android:exported="false" />
+
+        <activity
+            android:name="com.example.travelmemory.activity.PackingListActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name="com.example.travelmemory.activity.PlanCompareActivity"
+            android:exported="false" />
+
+        <activity
+            android:name="com.example.travelmemory.activity.PostTripRecordActivity"
+            android:exported="false" />
 
         <!-- 3. Add/Edit Trip Form Page -->
         <activity
@@ -81,7 +147,11 @@
             android:name="com.example.travelmemory.activity.MemoryCardActivity"
             android:exported="false" />
 
-        <!-- FileProvider for Sharing Image and Snapping Camera Temp Uri -->
+        <activity
+            android:name="com.example.travelmemory.activity.TripRecapActivity"
+            android:exported="false" />
+
+        <!-- FileProvider for sharing generated memory card images -->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="com.example.fileprovider"

@@ -42,42 +42,27 @@ public class SpotAdapter extends RecyclerView.Adapter<SpotAdapter.SpotViewHolder
     @Override
     public void onBindViewHolder(@NonNull SpotViewHolder holder, int position) {
         Spot spot = spots.get(position);
-
         holder.tvType.setText(spot.getType());
         holder.tvName.setText(spot.getName());
-        holder.tvNote.setText(spot.getNote().isEmpty() ? "暂无备注" : spot.getNote());
-
-        // Update star icon representation
-        if (spot.getIsFavorite() == 1) {
-            holder.btnStar.setImageResource(android.R.drawable.btn_star_big_on);
-        } else {
-            holder.btnStar.setImageResource(android.R.drawable.btn_star_big_off);
-        }
-
-        // Setup actions
+        String note = spot.getNote();
+        holder.tvNote.setText(note == null || note.isEmpty() ? "暂无备注" : note);
+        holder.btnStar.setImageResource(spot.getIsFavorite() == 1 ? android.R.drawable.btn_star_big_on : android.R.drawable.btn_star_big_off);
         holder.btnStar.setOnClickListener(v -> {
-            if (listener != null) {
-                int nextState = spot.getIsFavorite() == 1 ? 0 : 1;
-                listener.onToggleFavorite(spot, holder.getAdapterPosition(), nextState);
-            }
+            if (listener != null) listener.onToggleFavorite(spot, holder.getAdapterPosition(), spot.getIsFavorite() == 1 ? 0 : 1);
         });
-
         holder.btnDelete.setOnClickListener(v -> {
-            if (listener != null) {
-                listener.onDelete(spot, holder.getAdapterPosition());
-            }
+            if (listener != null) listener.onDelete(spot, holder.getAdapterPosition());
         });
     }
 
     @Override
     public int getItemCount() {
-        return spots.size();
+        return spots == null ? 0 : spots.size();
     }
 
     public static class SpotViewHolder extends RecyclerView.ViewHolder {
         TextView tvType, tvName, tvNote;
-        ImageButton btnStar;
-        ImageButton btnDelete;
+        ImageButton btnStar, btnDelete;
 
         public SpotViewHolder(@NonNull View itemView) {
             super(itemView);

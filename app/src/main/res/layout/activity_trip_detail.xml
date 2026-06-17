@@ -1,424 +1,180 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="@color/bg_light">
+    android:background="@color/bg_light"
+    android:orientation="vertical">
 
-    <!-- Header Overlay Frame -->
-    <RelativeLayout
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="220dp">
+        android:layout_height="230dp">
 
         <ImageView
             android:id="@+id/iv_detail_cover"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:contentDescription="旅行封面"
             android:scaleType="centerCrop"
-            android:src="@drawable/travel_placeholder"
-            android:contentDescription="旅行大背景" />
+            android:src="@drawable/travel_placeholder" />
 
         <View
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:background="#60000000" />
+            android:background="#55000000" />
 
-        <!-- Custom Detail Toolbar -->
-        <RelativeLayout
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="?android:attr/actionBarSize"
+            android:layout_height="56dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
             android:paddingHorizontal="12dp">
 
             <ImageButton
                 android:id="@+id/btn_detail_back"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_centerVertical="true"
-                android:background="?android:attr/selectableItemBackgroundBorderless"
-                android:src="@drawable/abc_ic_ab_back_material"
-                app:tint="@color/white"
-                android:contentDescription="返回" />
+                android:layout_width="42dp"
+                android:layout_height="42dp"
+                android:background="@drawable/card_rounded_white"
+                android:contentDescription="返回"
+                android:src="@drawable/abc_ic_ab_back_material" />
 
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentEnd="true"
-                android:layout_centerVertical="true"
-                android:orientation="horizontal">
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
 
-                <ImageButton
-                    android:id="@+id/btn_detail_edit"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:background="?android:attr/selectableItemBackgroundBorderless"
-                    android:src="@android:drawable/ic_menu_edit"
-                    app:tint="@color/white"
-                    android:contentDescription="编辑" />
+            <ImageButton
+                android:id="@+id/btn_detail_edit"
+                android:layout_width="42dp"
+                android:layout_height="42dp"
+                android:background="@drawable/card_rounded_white"
+                android:contentDescription="编辑旅行"
+                android:src="@android:drawable/ic_menu_edit" />
 
-                <ImageButton
-                    android:id="@+id/btn_detail_delete"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:background="?android:attr/selectableItemBackgroundBorderless"
-                    android:src="@android:drawable/ic_menu_delete"
-                    app:tint="@color/white"
-                    android:layout_marginStart="8dp"
-                    android:contentDescription="删除" />
-            </LinearLayout>
-        </RelativeLayout>
+            <ImageButton
+                android:id="@+id/btn_detail_delete"
+                android:layout_width="42dp"
+                android:layout_height="42dp"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/card_rounded_white"
+                android:contentDescription="删除旅行"
+                android:src="@android:drawable/ic_menu_delete"
+                android:visibility="gone" />
+        </LinearLayout>
 
-        <!-- Titles Container -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
             android:orientation="vertical"
-            android:layout_alignParentBottom="true"
-            android:padding="16dp">
+            android:padding="18dp">
 
             <TextView
                 android:id="@+id/tv_detail_name"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="毕业前的厦门之旅"
-                android:textSize="22sp"
-                android:textStyle="bold"
-                android:textColor="@color/white" />
+                android:text="旅行名称"
+                android:textColor="@color/white"
+                android:textSize="24sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tv_detail_destination"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="目的地："
+                android:textColor="@color/primary_light"
+                android:textSize="14sp"
+                android:textStyle="bold" />
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginTop="6dp"
-                android:gravity="center_vertical">
-
-                <TextView
-                    android:id="@+id/tv_detail_destination"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="📍 厦门"
-                    android:textSize="13sp"
-                    android:textColor="@color/primary_light"
-                    android:textStyle="bold" />
-
-                <View
-                    android:layout_width="1dp"
-                    android:layout_height="12dp"
-                    android:background="@color/primary_light"
-                    android:layout_marginHorizontal="10dp" />
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
                 <TextView
                     android:id="@+id/tv_detail_dates"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="2026-06-01 ~ 2026-06-04"
-                    android:textSize="12sp"
-                    android:textColor="@color/white" />
+                    android:textColor="@color/white"
+                    android:textSize="13sp" />
 
                 <TextView
                     android:id="@+id/tv_detail_days_bubble"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:background="@drawable/card_rounded_primary_light"
+                    android:paddingHorizontal="10dp"
+                    android:paddingVertical="3dp"
                     android:text="4 天"
-                    android:textSize="11sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/primary"
-                    android:background="@drawable/card_rounded_white"
-                    android:paddingHorizontal="6dp"
-                    android:paddingVertical="1dp"
-                    android:layout_marginStart="10dp" />
+                    android:textColor="@color/primary_dark"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
             </LinearLayout>
         </LinearLayout>
+    </FrameLayout>
 
-    </RelativeLayout>
-
-    <!-- Scrollable Detail Body -->
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        android:clipToPadding="false">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="12dp">
+            android:padding="16dp"
+            android:paddingBottom="28dp">
 
-            <!-- BENTO GRID STATS PANEL -->
+            <TextView
+                android:id="@+id/tv_detail_status"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/card_rounded_primary_light"
+                android:padding="12dp"
+                android:text="当前阶段：旅行记录"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginHorizontal="2dp"
-                android:layout_marginVertical="6dp"
-                android:gravity="center_vertical">
+                android:layout_marginTop="14dp"
+                android:background="@drawable/card_rounded_white"
+                android:orientation="vertical"
+                android:padding="18dp">
 
-                <!-- Bento block 1: Photos -->
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/layout_stat_photos"
-                    android:layout_width="0dp"
-                    android:layout_height="100dp"
-                    android:layout_weight="1"
-                    android:layout_margin="4dp"
-                    app:cardCornerRadius="18dp"
-                    app:cardElevation="0dp"
-                    app:strokeColor="@color/divider"
-                    app:strokeWidth="1.2dp"
-                    app:cardBackgroundColor="@color/white">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:orientation="vertical"
-                        android:gravity="center_vertical"
-                        android:padding="12dp">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="珍藏影像"
-                            android:textSize="10sp"
-                            android:textColor="@color/text_secondary"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/tv_stat_photos_count"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="0"
-                            android:textSize="22sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/primary"
-                            android:layout_marginTop="6dp" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="张照片"
-                            android:textSize="10sp"
-                            android:textColor="@color/text_secondary"
-                            android:layout_marginTop="2dp" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <!-- Bento block 2: Spots -->
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/layout_stat_spots"
-                    android:layout_width="0dp"
-                    android:layout_height="100dp"
-                    android:layout_weight="1"
-                    android:layout_margin="4dp"
-                    app:cardCornerRadius="18dp"
-                    app:cardElevation="0dp"
-                    app:strokeColor="@color/divider"
-                    app:strokeWidth="1.2dp"
-                    app:cardBackgroundColor="@color/white">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:orientation="vertical"
-                        android:gravity="center_vertical"
-                        android:padding="12dp">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="打卡景点"
-                            android:textSize="10sp"
-                            android:textColor="@color/text_secondary"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/tv_stat_spots_count"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="0"
-                            android:textSize="22sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/primary"
-                            android:layout_marginTop="6dp" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="处地点"
-                            android:textSize="10sp"
-                            android:textColor="@color/text_secondary"
-                            android:layout_marginTop="2dp" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <!-- Bento block 3: Expenses (Mint background) -->
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/layout_stat_expense"
-                    android:layout_width="0dp"
-                    android:layout_height="100dp"
-                    android:layout_weight="1.2"
-                    android:layout_margin="4dp"
-                    app:cardCornerRadius="18dp"
-                    app:cardElevation="0dp"
-                    app:strokeWidth="0dp"
-                    app:cardBackgroundColor="@color/primary_light">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:orientation="vertical"
-                        android:gravity="center_vertical"
-                        android:padding="12dp">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="总计支出"
-                            android:textSize="10sp"
-                            android:textColor="#00201F"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/tv_stat_expense_sum"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="¥0.00"
-                            android:textSize="18sp"
-                            android:textStyle="bold"
-                            android:textColor="#00201F"
-                            android:layout_marginTop="6dp"
-                            android:ellipsize="end"
-                            android:maxLines="1" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="本程花费"
-                            android:textSize="10sp"
-                            android:textColor="#00201F"
-                            android:alpha="0.75"
-                            android:layout_marginTop="2dp" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-            </LinearLayout>
-
-            <!-- GUEST MANUAL / ACTION NAVIGATION TILES -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="管理板块"
-                android:textSize="14sp"
-                android:textColor="@color/black"
-                android:textStyle="bold"
-                android:layout_marginTop="16dp"
-                android:layout_marginStart="4dp"
-                android:layout_marginBottom="8dp" />
-
-            <GridLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:columnCount="2"
-                android:rowCount="3"
-                android:alignmentMode="alignMargins"
-                android:columnOrderPreserved="false">
-
-                <!-- 1. Add Daily note -->
-                <Button
-                    android:id="@+id/btn_menu_notes"
-                    android:layout_width="0dp"
-                    android:layout_height="48dp"
-                    android:layout_columnWeight="1"
-                    android:layout_margin="4dp"
-                    android:background="@drawable/btn_primary"
-                    android:backgroundTint="@color/primary"
-                    android:text="✍️ 每日日记"
-                    android:textColor="@color/white"
-                    android:textStyle="bold" />
-
-                <!-- 2. Album Photo -->
-                <Button
-                    android:id="@+id/btn_menu_photos"
-                    android:layout_width="0dp"
-                    android:layout_height="48dp"
-                    android:layout_columnWeight="1"
-                    android:layout_margin="4dp"
-                    android:background="@drawable/btn_primary"
-                    android:backgroundTint="@color/primary"
-                    android:text="📷 导入照片"
-                    android:textColor="@color/white"
-                    android:textStyle="bold" />
-
-                <!-- 3. Spot Hit -->
-                <Button
-                    android:id="@+id/btn_menu_spots"
-                    android:layout_width="0dp"
-                    android:layout_height="48dp"
-                    android:layout_columnWeight="1"
-                    android:layout_margin="4dp"
-                    android:background="@drawable/btn_primary"
-                    android:backgroundTint="@color/primary"
-                    android:text="📍 景点打卡"
-                    android:textColor="@color/white"
-                    android:textStyle="bold" />
-
-                <!-- 4. Cash Exp -->
-                <Button
-                    android:id="@+id/btn_menu_expense"
-                    android:layout_width="0dp"
-                    android:layout_height="48dp"
-                    android:layout_columnWeight="1"
-                    android:layout_margin="4dp"
-                    android:background="@drawable/btn_primary"
-                    android:backgroundTint="@color/primary"
-                    android:text="💰 记账明细"
-                    android:textColor="@color/white"
-                    android:textStyle="bold" />
-
-                <!-- 5. Generate share postcard -->
-                <Button
-                    android:id="@+id/btn_menu_memory"
+                <TextView
+                    android:id="@+id/tv_mode_title"
                     android:layout_width="match_parent"
-                    android:layout_height="50dp"
-                    android:layout_columnSpan="2"
-                    android:layout_margin="4dp"
-                    android:background="@drawable/btn_primary"
-                    android:backgroundTint="@color/accent"
-                    android:text="🌟 生成回忆纪念卡"
-                    android:textColor="@color/white"
-                    android:textStyle="bold"
-                    android:textSize="15sp" />
-            </GridLayout>
+                    android:layout_height="wrap_content"
+                    android:text="旅行总览"
+                    android:textColor="@color/text_primary"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
 
-            <!-- DAILY JOURNAL CHRONOLOGY HEADLINE -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="时间轴足迹"
-                android:textSize="14sp"
-                android:textColor="@color/black"
-                android:textStyle="bold"
-                android:layout_marginTop="20dp"
-                android:layout_marginStart="4dp"
-                android:layout_marginBottom="8dp" />
+                <TextView
+                    android:id="@+id/tv_mode_description"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="这是一趟值得记录的旅行。"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="14sp" />
 
-            <!-- Timeline Empty Hint -->
-            <TextView
-                android:id="@+id/tv_detail_timeline_empty"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="这一站还没写过日记呢，点击上面的“每日日记”记录美好一天吧！"
-                android:gravity="center"
-                android:padding="20dp"
-                android:textSize="13sp"
-                android:textColor="@color/text_secondary"
-                android:visibility="gone" />
-
-            <!-- Timeline list -->
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rv_detail_timeline"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:nestedScrollingEnabled="false" />
-
+                <LinearLayout
+                    android:id="@+id/layout_mode_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="vertical" />
+            </LinearLayout>
         </LinearLayout>
     </ScrollView>
-
 </LinearLayout>

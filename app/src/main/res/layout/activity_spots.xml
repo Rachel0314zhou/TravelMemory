@@ -34,27 +34,26 @@
             android:textStyle="bold" />
     </LinearLayout>
 
-    <!-- Expandable Add Spot Form Card -->
     <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="12dp"
-        app:cardCornerRadius="12dp"
-        app:cardElevation="3dp"
+        app:cardCornerRadius="20dp"
+        app:cardElevation="2dp"
         app:cardBackgroundColor="@color/white">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="12dp">
+            android:padding="16dp">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="新增景点/美食打卡点"
-                android:textSize="14sp"
-                android:textColor="@color/primary"
+                android:text="景点/美食打卡"
+                android:textSize="17sp"
+                android:textColor="@color/text_primary"
                 android:textStyle="bold"
                 android:layout_marginBottom="8dp" />
 
@@ -62,8 +61,7 @@
                 android:id="@+id/et_spot_name"
                 android:layout_width="match_parent"
                 android:layout_height="44dp"
-                android:background="@drawable/card_rounded_white"
-                android:backgroundTint="@color/bg_light"
+                android:background="@drawable/bg_search_box"
                 android:hint="@string/spot_name_hint"
                 android:textColor="@color/text_primary"
                 android:textColorHint="@color/text_hint"
@@ -83,7 +81,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="分类: "
+                    android:text="类型"
                     android:textColor="@color/text_primary"
                     android:textStyle="bold"
                     android:textSize="12sp" />
@@ -94,8 +92,7 @@
                     android:layout_height="40dp"
                     android:layout_weight="1"
                     android:layout_marginStart="6dp"
-                    android:background="@drawable/card_rounded_white"
-                    android:backgroundTint="@color/bg_light" />
+                    android:background="@drawable/bg_search_box" />
 
                 <!-- Is Favorite CheckBox -->
                 <CheckBox
@@ -112,8 +109,7 @@
                 android:id="@+id/et_spot_note"
                 android:layout_width="match_parent"
                 android:layout_height="44dp"
-                android:background="@drawable/card_rounded_white"
-                android:backgroundTint="@color/bg_light"
+                android:background="@drawable/bg_search_box"
                 android:hint="@string/spot_note_hint"
                 android:textColor="@color/text_primary"
                 android:textColorHint="@color/text_hint"
@@ -127,7 +123,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="42dp"
                 android:background="@drawable/btn_primary"
-                android:text="📍 确认打卡登记"
+                android:text="确认打卡"
                 android:textColor="@color/white"
                 android:textStyle="bold" />
         </LinearLayout>
@@ -145,16 +141,16 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
 
-        <!-- Empty view -->
         <TextView
             android:id="@+id/spots_empty_view"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:text="@string/spots_empty"
             android:gravity="center"
-            android:textSize="14sp"
+            android:padding="28dp"
+            android:text="还没有打卡记录\n记录一个到过的地点吧"
             android:textColor="@color/text_secondary"
+            android:textSize="15sp"
             android:visibility="gone" />
     </FrameLayout>
 

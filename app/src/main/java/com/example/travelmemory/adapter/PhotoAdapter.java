@@ -48,27 +48,18 @@ public class PhotoAdapter extends RecyclerView.Adapter<PhotoAdapter.PhotoViewHol
     @Override
     public void onBindViewHolder(@NonNull PhotoViewHolder holder, int position) {
         Photo photo = photos.get(position);
-
-        // Draw local image
         ImageUtils.displayLocalImage(holder.ivThumbnail, photo.getImagePath(), R.drawable.travel_placeholder);
-
-        // Click listeners
         holder.btnDelete.setOnClickListener(v -> {
-            if (deleteListener != null) {
-                deleteListener.onDelete(photo, holder.getAdapterPosition());
-            }
+            if (deleteListener != null) deleteListener.onDelete(photo, holder.getAdapterPosition());
         });
-
         holder.itemView.setOnClickListener(v -> {
-            if (clickListener != null) {
-                clickListener.onClick(photo);
-            }
+            if (clickListener != null) clickListener.onClick(photo);
         });
     }
 
     @Override
     public int getItemCount() {
-        return photos.size();
+        return photos == null ? 0 : photos.size();
     }
 
     public static class PhotoViewHolder extends RecyclerView.ViewHolder {

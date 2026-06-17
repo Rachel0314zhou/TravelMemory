@@ -43,49 +43,29 @@ public class ExpenseAdapter extends RecyclerView.Adapter<ExpenseAdapter.ExpenseV
     @Override
     public void onBindViewHolder(@NonNull ExpenseViewHolder holder, int position) {
         Expense expense = expenses.get(position);
-
         holder.tvCategory.setText(expense.getCategory());
-        holder.tvNote.setText(expense.getNote().isEmpty() ? "未分类支出" : expense.getNote());
+        String note = expense.getNote();
+        holder.tvNote.setText(note == null || note.isEmpty() ? "未填写备注" : note);
         holder.tvDate.setText(expense.getDate());
         holder.tvAmount.setText(String.format("¥%.2f", expense.getAmount()));
-
-        // Choose custom category background colors
-        int colorRes = R.color.cat_other;
-        String cat = expense.getCategory();
-        if (cat != null) {
-            switch (cat) {
-                case "餐饮":
-                    colorRes = R.color.cat_food;
-                    break;
-                case "交通":
-                    colorRes = R.color.cat_traffic;
-                    break;
-                case "住宿":
-                    colorRes = R.color.cat_hotel;
-                    break;
-                case "门票":
-                    colorRes = R.color.cat_ticket;
-                    break;
-                case "购物":
-                    colorRes = R.color.cat_shopping;
-                    break;
-            }
-        }
-
-        int col = ContextCompat.getColor(context, colorRes);
-        holder.tvCategory.setBackgroundTintList(ColorStateList.valueOf(col));
-
-        // Click actions
+        holder.tvCategory.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(context, colorForCategory(expense.getCategory()))));
         holder.btnDelete.setOnClickListener(v -> {
-            if (listener != null) {
-                listener.onDelete(expense, holder.getAdapterPosition());
-            }
+            if (listener != null) listener.onDelete(expense, holder.getAdapterPosition());
         });
+    }
+
+    private int colorForCategory(String category) {
+        if ("餐饮".equals(category)) return R.color.cat_food;
+        if ("交通".equals(category)) return R.color.cat_traffic;
+        if ("住宿".equals(category)) return R.color.cat_hotel;
+        if ("门票".equals(category)) return R.color.cat_ticket;
+        if ("购物".equals(category)) return R.color.cat_shopping;
+        return R.color.cat_other;
     }
 
     @Override
     public int getItemCount() {
-        return expenses.size();
+        return expenses == null ? 0 : expenses.size();
     }
 
     public static class ExpenseViewHolder extends RecyclerView.ViewHolder {

@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg_light"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:background="@color/primary"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="16dp">
+
+        <ImageButton
+            android:id="@+id/btn_statistics_back"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="&#x8FD4;&#x56DE;"
+            android:src="@drawable/abc_ic_ab_back_material"
+            app:tint="@color/white" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:text="旅行数据"
+            android:textColor="@color/white"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="6dp"
+                android:background="@drawable/card_rounded_primary_light"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="我的旅行足迹"
+                    android:textColor="@color/text_primary"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="用轻量数据回顾旅行、日记、照片、打卡和花费。"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <GridLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:columnCount="2">
+
+            <LinearLayout
+                style="@style/StatCard"
+                android:layout_columnWeight="1">
+                <TextView style="@style/StatLabel" android:text="&#x603B;&#x65C5;&#x884C;&#x6B21;&#x6570;" />
+                <TextView android:id="@+id/tv_stat_trip_count" style="@style/StatValue" android:text="0 &#x6B21;" />
+            </LinearLayout>
+
+            <LinearLayout
+                style="@style/StatCard"
+                android:layout_columnWeight="1">
+                <TextView style="@style/StatLabel" android:text="&#x7D2F;&#x8BA1;&#x65C5;&#x884C;&#x5929;&#x6570;" />
+                <TextView android:id="@+id/tv_stat_travel_days" style="@style/StatValue" android:text="0 &#x5929;" />
+            </LinearLayout>
+
+            <LinearLayout
+                style="@style/StatCard"
+                android:layout_columnWeight="1">
+                <TextView style="@style/StatLabel" android:text="&#x603B;&#x7167;&#x7247;&#x6570;" />
+                <TextView android:id="@+id/tv_stat_photo_count" style="@style/StatValue" android:text="0 &#x5F20;" />
+            </LinearLayout>
+
+            <LinearLayout
+                style="@style/StatCard"
+                android:layout_columnWeight="1">
+                <TextView style="@style/StatLabel" android:text="&#x603B;&#x6253;&#x5361;&#x666F;&#x70B9;" />
+                <TextView android:id="@+id/tv_stat_spot_count" style="@style/StatValue" android:text="0 &#x4E2A;" />
+            </LinearLayout>
+
+            <LinearLayout
+                style="@style/StatCard"
+                android:layout_columnSpan="2">
+                <TextView style="@style/StatLabel" android:text="&#x7D2F;&#x8BA1;&#x652F;&#x51FA;" />
+                <TextView android:id="@+id/tv_stat_total_expense" style="@style/StatValue" android:text="&#x00A5;0.00" />
+            </LinearLayout>
+
+            <LinearLayout
+                style="@style/StatCard"
+                android:layout_columnWeight="1">
+                <TextView style="@style/StatLabel" android:text="&#x6700;&#x5E38;&#x89C1;&#x5FC3;&#x60C5;" />
+                <TextView android:id="@+id/tv_stat_common_mood" style="@style/StatValue" android:text="&#x6682;&#x65E0;&#x8BB0;&#x5F55;" />
+            </LinearLayout>
+
+            <LinearLayout
+                style="@style/StatCard"
+                android:layout_columnWeight="1">
+                <TextView style="@style/StatLabel" android:text="&#x6700;&#x8FD1;&#x76EE;&#x7684;&#x5730;" />
+                <TextView android:id="@+id/tv_stat_recent_destination" style="@style/StatValue" android:text="&#x6682;&#x65E0;&#x8BB0;&#x5F55;" />
+            </LinearLayout>
+
+            <LinearLayout
+                style="@style/StatCard"
+                android:layout_columnWeight="1">
+                <TextView style="@style/StatLabel" android:text="总计划数量" />
+                <TextView android:id="@+id/tv_stat_plan_count" style="@style/StatValue" android:text="0 个" />
+            </LinearLayout>
+
+            <LinearLayout
+                style="@style/StatCard"
+                android:layout_columnWeight="1">
+                <TextView style="@style/StatLabel" android:text="已完成计划" />
+                <TextView android:id="@+id/tv_stat_completed_plan_count" style="@style/StatValue" android:text="0 个" />
+            </LinearLayout>
+
+            <LinearLayout
+                style="@style/StatCard"
+                android:layout_columnWeight="1">
+                <TextView style="@style/StatLabel" android:text="平均计划完成率" />
+                <TextView android:id="@+id/tv_stat_avg_plan_rate" style="@style/StatValue" android:text="0%" />
+            </LinearLayout>
+
+            <LinearLayout
+                style="@style/StatCard"
+                android:layout_columnWeight="1">
+                <TextView style="@style/StatLabel" android:text="遗憾总数" />
+                <TextView android:id="@+id/tv_stat_regret_count" style="@style/StatValue" android:text="0 个" />
+            </LinearLayout>
+
+            <LinearLayout
+                style="@style/StatCard"
+                android:layout_columnSpan="2">
+                <TextView style="@style/StatLabel" android:text="打包完成率平均值" />
+                <TextView android:id="@+id/tv_stat_avg_packing_rate" style="@style/StatValue" android:text="0%" />
+            </LinearLayout>
+            </GridLayout>
+        </LinearLayout>
+    </ScrollView>
+
+    <include layout="@layout/layout_bottom_nav" />
+</LinearLayout>
