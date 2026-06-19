@@ -79,6 +79,19 @@
             android:layout_toStartOf="@id/btn_spot_toggle_favorite"
             android:layout_marginEnd="12dp" />
 
+        <TextView
+            android:id="@+id/tv_spot_source"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/tv_spot_note"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/card_rounded_primary_light"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="4dp"
+            android:text="计划外新增"
+            android:textColor="@color/primary"
+            android:textSize="11sp" />
+
     </RelativeLayout>
 
 </androidx.cardview.widget.CardView>

@@ -150,7 +150,7 @@
                 android:layout_marginTop="10dp"
                 android:background="@drawable/btn_secondary"
                 android:text="查看遗憾回顾"
-                android:textColor="@color/primary_dark" />
+                android:textColor="@color/white" />
         </LinearLayout>
     </LinearLayout>
 </LinearLayout>

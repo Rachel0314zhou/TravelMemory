@@ -1,29 +1,38 @@
 package com.example.travelmemory.activity;
 
 import android.app.DatePickerDialog;
+import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
 import com.example.R;
 import com.example.travelmemory.db.DatabaseHelper;
 import com.example.travelmemory.model.DayRecord;
+import com.example.travelmemory.model.Photo;
 import com.example.travelmemory.model.Trip;
+import com.example.travelmemory.utils.ImageUtils;
 import com.example.travelmemory.utils.SessionManager;
 import com.example.travelmemory.utils.TravelConstants;
 
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
 public class DayRecordActivity extends AppCompatActivity {
+
+    private static final int REQUEST_CODE_ALBUM = 201;
 
     private DatabaseHelper dbHelper;
     private SessionManager sessionManager;
@@ -31,8 +40,9 @@ public class DayRecordActivity extends AppCompatActivity {
     private int currentUserId = -1;
     private String selectedDate = "";
     private String selectedMood = "开心";
-    private TextView tvTripName, tvSelectDate;
+    private TextView tvTripName, tvSelectDate, tvPhotoStatus;
     private EditText etNote;
+    private final List<String> pendingPhotoPaths = new ArrayList<>();
     private final Map<String, TextView> moodViews = new LinkedHashMap<>();
 
     @Override
@@ -54,9 +64,11 @@ public class DayRecordActivity extends AppCompatActivity {
 
         tvTripName = findViewById(R.id.tv_record_trip_name);
         tvSelectDate = findViewById(R.id.tv_record_select_date);
+        tvPhotoStatus = findViewById(R.id.tv_record_photo_status);
         etNote = findViewById(R.id.et_record_note);
         Button btnSave = findViewById(R.id.btn_save_record);
         findViewById(R.id.btn_record_back).setOnClickListener(v -> finish());
+        findViewById(R.id.btn_record_add_photo).setOnClickListener(v -> choosePhotoFromAlbum());
 
         moodViews.put("开心", findViewById(R.id.mood_happy));
         moodViews.put("平静", findViewById(R.id.mood_calm));
@@ -84,6 +96,11 @@ public class DayRecordActivity extends AppCompatActivity {
         updateMoodSelection(selectedMood);
         tryLoadExistingRecord();
         btnSave.setOnClickListener(v -> saveRecord());
+    }
+
+    private void choosePhotoFromAlbum() {
+        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+        startActivityForResult(intent, REQUEST_CODE_ALBUM);
     }
 
     private void setupMoodClickListeners() {
@@ -144,9 +161,13 @@ public class DayRecordActivity extends AppCompatActivity {
 
     private void saveRecord() {
         String noteText = etNote.getText().toString().trim();
-        if (noteText.isEmpty()) {
+        if (noteText.isEmpty() && pendingPhotoPaths.isEmpty()) {
             Toast.makeText(this, "请先写点今天的旅行记录", Toast.LENGTH_SHORT).show();
             return;
+        }
+
+        if (noteText.isEmpty()) {
+            noteText = "添加了旅行照片";
         }
 
         DayRecord record = new DayRecord();
@@ -159,9 +180,39 @@ public class DayRecordActivity extends AppCompatActivity {
         long result = dbHelper.addOrUpdateDayRecord(record);
         if (result != -1) {
             Toast.makeText(this, "日记保存成功！", Toast.LENGTH_SHORT).show();
+            savePendingPhotos();
             finish();
         } else {
             Toast.makeText(this, "日记保存失败，请重试", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void savePendingPhotos() {
+        if (pendingPhotoPaths.isEmpty()) return;
+        DayRecord savedRecord = dbHelper.getDayRecordByTripAndDate(tripId, selectedDate);
+        int dayRecordId = savedRecord == null ? -1 : savedRecord.getId();
+        for (String path : pendingPhotoPaths) {
+            Photo photo = new Photo();
+            photo.setTripId(tripId);
+            photo.setDayRecordId(dayRecordId);
+            photo.setImagePath(path);
+            photo.setCreatedAt(selectedDate);
+            dbHelper.addPhoto(photo);
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (resultCode != RESULT_OK) return;
+        if (requestCode == REQUEST_CODE_ALBUM && data != null && data.getData() != null) {
+            String savedPath = ImageUtils.copyImageToAppDirectory(this, data.getData());
+            if (!savedPath.isEmpty()) {
+                pendingPhotoPaths.add(savedPath);
+                tvPhotoStatus.setText("已选择 " + pendingPhotoPaths.size() + " 张照片");
+            } else {
+                Toast.makeText(this, "添加照片失败", Toast.LENGTH_SHORT).show();
+            }
         }
     }
 }

@@ -11,7 +11,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.R;
-import com.example.travelmemory.activity.MemoryCardActivity;
+import com.example.travelmemory.activity.TripReportActivity;
 import com.example.travelmemory.model.Trip;
 import com.example.travelmemory.utils.DateUtils;
 import com.example.travelmemory.utils.ImageUtils;
@@ -45,8 +45,9 @@ public class MemoryTripAdapter extends RecyclerView.Adapter<MemoryTripAdapter.Me
         long days = DateUtils.getDaysBetween(trip.getStartDate(), trip.getEndDate());
         holder.tvDays.setText(days + " \u5929");
         ImageUtils.displayLocalImage(holder.ivCover, trip.getCoverPath(), R.drawable.travel_placeholder);
+        holder.itemView.setContentDescription("Travel Memorial Report");
         holder.itemView.setOnClickListener(v ->
-                TripNavigator.openFeature(context, MemoryCardActivity.class, trip.getId()));
+                TripNavigator.openFeature(context, TripReportActivity.class, trip.getId()));
     }
 
     @Override

@@ -2,15 +2,15 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="@color/bg_light">
+    android:background="@color/bg_light"
+    android:orientation="vertical">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="56dp"
-        android:orientation="horizontal"
         android:background="@color/primary"
         android:gravity="center_vertical"
+        android:orientation="horizontal"
         android:paddingHorizontal="16dp">
 
         <ImageButton
@@ -18,8 +18,8 @@
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/abc_ic_ab_back_material"
-            android:contentDescription="返回" />
+            android:contentDescription="返回"
+            android:src="@drawable/abc_ic_ab_back_material" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -56,17 +56,10 @@
                 android:id="@+id/btn_during_day_record"
                 android:layout_width="0dp"
                 android:layout_height="52dp"
+                android:layout_columnSpan="2"
                 android:layout_columnWeight="1"
                 android:layout_margin="5dp"
-                android:text="写旅行日记" />
-
-            <Button
-                android:id="@+id/btn_during_photo"
-                android:layout_width="0dp"
-                android:layout_height="52dp"
-                android:layout_columnWeight="1"
-                android:layout_margin="5dp"
-                android:text="添加照片" />
+                android:text="记录今日旅行" />
 
             <Button
                 android:id="@+id/btn_during_spot"

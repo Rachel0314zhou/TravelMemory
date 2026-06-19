@@ -151,6 +151,10 @@
             android:name="com.example.travelmemory.activity.TripRecapActivity"
             android:exported="false" />
 
+        <activity
+            android:name="com.example.travelmemory.activity.TripReportActivity"
+            android:exported="false" />
+
         <!-- FileProvider for sharing generated memory card images -->
         <provider
             android:name="androidx.core.content.FileProvider"

@@ -112,6 +112,7 @@ public class SelectTripActivity extends AppCompatActivity implements TripAdapter
                 .setPositiveButton("删除", (dialog, which) -> {
                     if (dbHelper.deleteTripForUser(trip.getId(), currentUserId)) {
                         Toast.makeText(this, "旅行已删除", Toast.LENGTH_SHORT).show();
+                        loadTrips();
                         Intent intent = new Intent(this, MainActivity.class);
                         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
                         startActivity(intent);

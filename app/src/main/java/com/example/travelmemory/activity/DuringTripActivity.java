@@ -46,7 +46,6 @@ public class DuringTripActivity extends AppCompatActivity {
 
         findViewById(R.id.btn_during_back).setOnClickListener(v -> finish());
         findViewById(R.id.btn_during_day_record).setOnClickListener(v -> openWithTrip(DayRecordActivity.class));
-        findViewById(R.id.btn_during_photo).setOnClickListener(v -> openWithTrip(PhotoActivity.class));
         findViewById(R.id.btn_during_spot).setOnClickListener(v -> openWithTrip(SpotsActivity.class));
         findViewById(R.id.btn_during_expense).setOnClickListener(v -> openWithTrip(ExpenseActivity.class));
         findViewById(R.id.btn_enter_post_trip).setOnClickListener(v -> {

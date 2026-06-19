@@ -31,12 +31,6 @@
             android:textColor="@color/white"
             android:textSize="18sp"
             android:textStyle="bold" />
-
-        <Button
-            android:id="@+id/btn_add_pre_plan"
-            android:layout_width="wrap_content"
-            android:layout_height="40dp"
-            android:text="添加行前计划" />
     </LinearLayout>
 
     <TextView
@@ -48,15 +42,43 @@
         android:textSize="14sp" />
 
     <Button
-        android:id="@+id/btn_skip_pre_trip"
+        android:id="@+id/btn_pre_plan_select_trip"
         android:layout_width="match_parent"
         android:layout_height="56dp"
         android:layout_marginHorizontal="16dp"
-            android:layout_marginBottom="10dp"
-            android:background="@drawable/btn_primary"
-        android:text="进入旅行记录"
+        android:layout_marginBottom="10dp"
+        android:background="@drawable/btn_primary"
+        android:text="选择旅行"
         android:textColor="@color/white"
         android:textSize="16sp"
+        android:textStyle="bold" />
+
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:fillViewport="false"
+        android:overScrollMode="never"
+        android:paddingHorizontal="16dp"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:id="@+id/layout_pre_plan_day_tabs"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical"
+            android:orientation="horizontal" />
+    </HorizontalScrollView>
+
+    <Button
+        android:id="@+id/btn_skip_pre_trip"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginBottom="10dp"
+        android:background="@drawable/btn_secondary"
+        android:text="开始旅行记录"
+        android:textColor="@color/primary"
+        android:textSize="15sp"
         android:textStyle="bold" />
 
     <TextView
@@ -65,7 +87,7 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:gravity="center"
-        android:text="还没有行前计划，添加一条想完成的小目标吧"
+        android:text="还没有行前计划，先添加一条想去哪里、吃什么、几点去。"
         android:textColor="@color/text_secondary"
         android:textSize="16sp"
         android:visibility="gone" />
@@ -77,4 +99,25 @@
         android:layout_weight="1"
         android:clipToPadding="false"
         android:paddingBottom="16dp" />
+
+    <TextView
+        android:id="@+id/tv_pre_plan_pending_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="16dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="4dp"
+        android:text="待定"
+        android:textColor="@color/text_primary"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rv_pre_plan_pending"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:clipToPadding="false"
+        android:paddingBottom="16dp"
+        android:visibility="gone" />
 </LinearLayout>

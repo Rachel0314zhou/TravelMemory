@@ -5,6 +5,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -18,7 +19,7 @@ import java.util.List;
 public class PrePlanAdapter extends RecyclerView.Adapter<PrePlanAdapter.PrePlanViewHolder> {
 
     public interface Listener {
-        void onToggle(PrePlan plan);
+        void onToggle(PrePlan plan, boolean completed);
         void onEdit(PrePlan plan);
         void onDelete(PrePlan plan);
     }
@@ -44,6 +45,8 @@ public class PrePlanAdapter extends RecyclerView.Adapter<PrePlanAdapter.PrePlanV
     public void onBindViewHolder(@NonNull PrePlanViewHolder holder, int position) {
         PrePlan plan = plans.get(position);
         boolean completed = plan.getIsCompleted() == 1;
+        holder.cbCompleted.setOnCheckedChangeListener(null);
+        holder.cbCompleted.setChecked(completed);
         holder.tvTitle.setText(plan.getTitle());
         holder.tvStatus.setText(completed ? "已完成" : "未完成");
         holder.tvType.setText(plan.getType());
@@ -51,7 +54,9 @@ public class PrePlanAdapter extends RecyclerView.Adapter<PrePlanAdapter.PrePlanV
         holder.tvDate.setText(isBlank(plan.getTargetDate()) ? "计划日期：未设置" : "计划日期：" + plan.getTargetDate());
         holder.tvNote.setText(isBlank(plan.getNote()) ? "备注：暂无" : "备注：" + plan.getNote());
         holder.btnToggle.setText(completed ? "设为未完成" : "完成");
-        holder.btnToggle.setOnClickListener(v -> listener.onToggle(plan));
+        holder.cbCompleted.setText("");
+        holder.cbCompleted.setOnCheckedChangeListener((buttonView, isChecked) -> listener.onToggle(plan, isChecked));
+        holder.tvTime.setText(isBlank(plan.getTimeText()) ? "时间：未设置" : "时间：" + plan.getTimeText());
         holder.btnEdit.setOnClickListener(v -> listener.onEdit(plan));
         holder.btnDelete.setOnClickListener(v -> listener.onDelete(plan));
     }
@@ -72,6 +77,8 @@ public class PrePlanAdapter extends RecyclerView.Adapter<PrePlanAdapter.PrePlanV
         TextView tvLocation;
         TextView tvNote;
         TextView tvDate;
+        TextView tvTime;
+        CheckBox cbCompleted;
         Button btnToggle;
         Button btnEdit;
         Button btnDelete;
@@ -84,7 +91,9 @@ public class PrePlanAdapter extends RecyclerView.Adapter<PrePlanAdapter.PrePlanV
             tvLocation = itemView.findViewById(R.id.tv_pre_plan_location);
             tvNote = itemView.findViewById(R.id.tv_pre_plan_note);
             tvDate = itemView.findViewById(R.id.tv_pre_plan_date);
-            btnToggle = itemView.findViewById(R.id.btn_pre_plan_toggle);
+            tvTime = itemView.findViewById(R.id.tv_pre_plan_time);
+            cbCompleted = itemView.findViewById(R.id.cb_pre_plan_completed);
+            btnToggle = cbCompleted;
             btnEdit = itemView.findViewById(R.id.btn_pre_plan_edit);
             btnDelete = itemView.findViewById(R.id.btn_pre_plan_delete);
         }

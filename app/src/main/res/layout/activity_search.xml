@@ -4,139 +4,109 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-<LinearLayout
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="@color/bg_light">
-
-    <!-- Top Action Bar -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:orientation="horizontal"
-        android:background="@color/primary"
-        android:gravity="center_vertical"
-        android:paddingHorizontal="16dp">
+        android:layout_height="match_parent"
+        android:background="@color/bg_light"
+        android:orientation="vertical">
 
-        <ImageButton
-            android:id="@+id/btn_search_back"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:src="@android:drawable/ic_menu_sort_by_size"
-            app:tint="@color/white"
-            android:contentDescription="打开菜单" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:text="@string/search_title"
-            android:textSize="18sp"
-            android:textColor="@color/white"
-            android:textStyle="bold" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="12dp">
-
-        <!-- Input Row -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="56dp"
+            android:background="@color/primary"
+            android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:gravity="center_vertical">
+            android:paddingHorizontal="16dp">
 
-            <EditText
-                android:id="@+id/et_search_input"
+            <ImageButton
+                android:id="@+id/btn_search_back"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="打开菜单"
+                android:src="@android:drawable/ic_menu_sort_by_size"
+                app:tint="@color/white" />
+
+            <TextView
                 android:layout_width="0dp"
-                android:layout_height="48dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
                 android:layout_weight="1"
-                android:background="@drawable/bg_search_box"
-                android:hint="搜索旅行、地点、日记"
-                android:textColor="@color/black"
-                android:textColorHint="@color/text_hint"
-                android:paddingHorizontal="16dp"
-                android:textSize="13sp"
-                android:inputType="text"
-                android:maxLines="1" />
-
-            <Button
-                android:id="@+id/btn_search_submit"
-                android:layout_width="80dp"
-                android:layout_height="48dp"
-                android:layout_marginStart="8dp"
-                android:background="@drawable/btn_primary"
-                android:text="@string/search_btn"
+                android:text="@string/search_title"
                 android:textColor="@color/white"
+                android:textSize="18sp"
                 android:textStyle="bold" />
         </LinearLayout>
 
-        <!-- Mood filtering strip -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="按心情筛选"
-            android:textSize="12sp"
-            android:textColor="@color/primary"
-            android:textStyle="bold"
-            android:layout_marginTop="12dp"
-            android:layout_marginStart="4dp" />
-
-        <HorizontalScrollView
+        <ScrollView
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:scrollbars="none"
-            android:layout_marginTop="6dp"
-            android:layout_marginBottom="6dp">
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:fillViewport="true">
 
             <LinearLayout
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:paddingBottom="4dp">
+                android:orientation="vertical"
+                android:padding="16dp">
 
-                <!-- Reset buttons/Mood buttons -->
-                <TextView android:id="@+id/filter_all" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="全部" android:textSize="12sp" android:textColor="@color/white" android:background="@drawable/btn_primary" android:paddingHorizontal="12dp" android:paddingVertical="6dp" android:layout_marginEnd="6dp" android:textStyle="bold"/>
-                <TextView android:id="@+id/filter_happy" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="开心 😊" android:textSize="12sp" android:textColor="@color/black" android:background="@drawable/card_rounded_white" android:paddingHorizontal="12dp" android:paddingVertical="6dp" android:layout_marginEnd="6dp" android:textStyle="bold"/>
-                <TextView android:id="@+id/filter_calm" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="平静 😐" android:textSize="12sp" android:textColor="@color/black" android:background="@drawable/card_rounded_white" android:paddingHorizontal="12dp" android:paddingVertical="6dp" android:layout_marginEnd="6dp" android:textStyle="bold"/>
-                <TextView android:id="@+id/filter_tired" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="疲惫 😴" android:textSize="12sp" android:textColor="@color/black" android:background="@drawable/card_rounded_white" android:paddingHorizontal="12dp" android:paddingVertical="6dp" android:layout_marginEnd="6dp" android:textStyle="bold"/>
-                <TextView android:id="@+id/filter_excited" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="兴奋 🤩" android:textSize="12sp" android:textColor="@color/black" android:background="@drawable/card_rounded_white" android:paddingHorizontal="12dp" android:paddingVertical="6dp" android:layout_marginEnd="6dp" android:textStyle="bold"/>
-                <TextView android:id="@+id/filter_touched" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="感动 🥹" android:textSize="12sp" android:textColor="@color/black" android:background="@drawable/card_rounded_white" android:paddingHorizontal="12dp" android:paddingVertical="6dp" android:layout_marginEnd="6dp" android:textStyle="bold"/>
-                <TextView android:id="@+id/filter_regret" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="遗憾 😔" android:textSize="12sp" android:textColor="@color/black" android:background="@drawable/card_rounded_white" android:paddingHorizontal="12dp" android:paddingVertical="6dp" android:layout_marginEnd="6dp" android:textStyle="bold"/>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/card_rounded_white"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:id="@+id/tv_plan_trip_title"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="当前旅行"
+                        android:textColor="@color/text_primary"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tv_plan_trip_dates"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:text="Day / 日期"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="13sp" />
+
+                    <Button
+                        android:id="@+id/btn_plan_select_trip"
+                        android:layout_width="match_parent"
+                        android:layout_height="44dp"
+                        android:layout_marginTop="12dp"
+                        android:background="@drawable/btn_primary"
+                        android:text="选择旅行"
+                        android:textColor="@color/white"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/layout_plan_timeline"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:orientation="vertical" />
+
+                <TextView
+                    android:id="@+id/search_empty_view"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="80dp"
+                    android:gravity="center"
+                    android:text="还没有行前计划&#10;先到行前准备中添加想去的地方和想吃的美食。"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="14sp"
+                    android:visibility="gone" />
             </LinearLayout>
-        </HorizontalScrollView>
+        </ScrollView>
 
-    </LinearLayout>
-
-    <FrameLayout
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:padding="8dp">
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rv_search_results"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent" />
-
-        <TextView
-            android:id="@+id/search_empty_view"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:text="没有找到相关内容\n可以试试搜索旅行名称、地点或日记关键词。"
-            android:gravity="center"
-            android:textSize="14sp"
-            android:textColor="@color/text_secondary"
-            android:visibility="gone" />
-    </FrameLayout>
-
-    <include layout="@layout/layout_bottom_nav" />
+        <include layout="@layout/layout_bottom_nav" />
 
     </LinearLayout>
 

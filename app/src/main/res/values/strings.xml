@@ -65,8 +65,8 @@
     <string name="expense_stats">分类消费明细</string>
     <string name="add_expense">添加一笔</string>
 
-    <string name="search_title">搜索旅程</string>
-    <string name="search_btn">搜索</string>
+    <string name="search_title">行程计划</string>
+    <string name="search_btn">查看计划</string>
     <string name="filter_mood_label">按心情筛选</string>
     <string name="search_empty">没有找到相关内容，可以试试搜索旅行名称、地点或日记关键词。</string>
 

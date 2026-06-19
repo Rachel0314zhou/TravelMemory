@@ -22,10 +22,20 @@
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
+            <CheckBox
+                android:id="@+id/cb_pre_plan_completed"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:buttonTint="@color/primary"
+                android:gravity="center"
+                android:minWidth="0dp"
+                android:minHeight="0dp" />
+
             <TextView
                 android:id="@+id/tv_pre_plan_title"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
                 android:layout_weight="1"
                 android:textColor="@color/black"
                 android:textSize="16sp"
@@ -69,6 +79,14 @@
             android:textSize="13sp" />
 
         <TextView
+            android:id="@+id/tv_pre_plan_time"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:textColor="@color/text_secondary"
+            android:textSize="13sp" />
+
+        <TextView
             android:id="@+id/tv_pre_plan_note"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -84,7 +102,8 @@
             android:orientation="horizontal">
 
             <Button
-                android:id="@+id/btn_pre_plan_toggle"
+                android:id="@+id/unused_pre_plan_done"
+                android:visibility="gone"
                 android:layout_width="wrap_content"
                 android:layout_height="40dp"
                 android:text="完成" />

@@ -176,8 +176,7 @@ public class TripDetailActivity extends AppCompatActivity {
     private void showDuringTripMode() {
         tvModeTitle.setText("旅行记录");
         tvModeDescription.setText("记录路上的日记、照片、打卡和花费。");
-        addActionCard("写旅行日记", "记录今天发生的故事和心情。", () -> openWithTrip(DayRecordActivity.class));
-        addActionCard("添加旅行照片", "保存路上的画面。", () -> openWithTrip(PhotoActivity.class));
+        addActionCard("记录今日旅行", "写下今天的故事、心情，并补充路上的照片。", () -> openWithTrip(DayRecordActivity.class));
         addActionCard("景点/美食打卡", "标记值得记住的地点。", () -> openWithTrip(SpotsActivity.class));
         addActionCard("记录花费", "记下交通、住宿、餐饮等支出。", () -> openWithTrip(ExpenseActivity.class));
         addSecondaryAction("结束旅行", this::confirmEndTrip);
@@ -194,14 +193,15 @@ public class TripDetailActivity extends AppCompatActivity {
         addActionCard("遗憾回顾", "看看这次没来得及完成的计划。", () -> openWithTrip(PlanCompareActivity.class));
         addSectionTitle("旅行成果");
         addActionCard("旅行回顾", "上下滑动浏览照片、文字和心情标签。", () -> openWithTrip(TripRecapActivity.class));
+        addActionCard("旅行纪念报告", "把日记、照片、打卡、花费和遗憾整理成沉浸式故事报告。", () -> openWithTrip(TripReportActivity.class));
     }
 
     private void showMemoryMode() {
-        tvModeTitle.setText("回忆卡片");
-        tvModeDescription.setText("把这次旅行整理成一张值得收藏的回忆卡片。");
+        tvModeTitle.setText("旅行纪念报告");
+        tvModeDescription.setText("把这次旅行整理成可沉浸浏览、可保存分享的纪念报告。");
         addActionCard("查看旅行回顾", "打开沉浸式滑动回顾。", () -> openWithTrip(TripRecapActivity.class));
-        addActionCard("生成/重新生成回忆", "根据日记、照片、打卡和花费更新回忆。", () -> openWithTrip(TripRecapActivity.class));
-        addActionCard("查看全部回忆", "浏览所有旅行的回忆卡片。", () -> startActivity(new Intent(this, MemoryListActivity.class)));
+        addActionCard("查看旅行纪念报告", "像旅行 Vlog 总结页一样回看这次旅行。", () -> openWithTrip(TripReportActivity.class));
+        addActionCard("查看全部报告", "从回忆中心再次进入每一趟旅行的纪念报告。", () -> startActivity(new Intent(this, MemoryListActivity.class)));
     }
 
     private void showExpenseMode() {

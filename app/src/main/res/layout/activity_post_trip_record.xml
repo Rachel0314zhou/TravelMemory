@@ -189,18 +189,29 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
-                    android:text="整理完成后，可以生成一张专属回忆卡片。"
+                    android:text="整理完成后，可以生成沉浸式旅行纪念报告，也可以继续查看基础旅行回顾。"
                     android:textColor="@color/text_secondary"
                     android:textSize="13sp" />
 
                 <Button
-                    android:id="@+id/btn_post_memory"
+                    android:id="@+id/btn_post_report"
                     android:layout_width="match_parent"
                     android:layout_height="48dp"
+                    android:contentDescription="查看并保存旅行纪念报告"
                     android:layout_marginTop="12dp"
                     android:background="@drawable/btn_primary"
-                    android:text="生成回忆卡片"
+                    android:text="生成旅行纪念报告"
                     android:textColor="@color/white"
+                    android:textStyle="bold" />
+
+                <Button
+                    android:id="@+id/btn_post_memory"
+                    android:layout_width="match_parent"
+                    android:layout_height="46dp"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/btn_secondary"
+                    android:text="查看旅行回顾"
+                    android:textColor="@color/primary_dark"
                     android:textStyle="bold" />
             </LinearLayout>
 

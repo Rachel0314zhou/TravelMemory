@@ -8,6 +8,8 @@ import androidx.test.core.app.ApplicationProvider;
 
 import com.example.travelmemory.db.DatabaseHelper;
 import com.example.travelmemory.model.PackingItem;
+import com.example.travelmemory.model.PrePlan;
+import com.example.travelmemory.model.Spot;
 import com.example.travelmemory.model.Trip;
 
 import org.junit.Before;
@@ -99,6 +101,38 @@ public class DatabaseUserIsolationTest {
 
         assertPackedState(dbHelper.getPackingItemsForTrip(tripAId), "防水袋", 1);
         assertItemAbsent(dbHelper.getPackingItemsForTrip(tripBId), "防水袋");
+    }
+
+    @Test
+    public void prePlansPersistPendingStatusAndSyncCompletedCheckinsOnce() {
+        int userId = (int) dbHelper.registerUser("plan_user", "123456", "Plan");
+        int tripId = (int) dbHelper.addTrip(createTrip(userId, "Plan Trip", "Xiamen"));
+
+        PrePlan pendingFood = new PrePlan();
+        pendingFood.setTripId(tripId);
+        pendingFood.setType("想吃的美食");
+        pendingFood.setTitle("沙茶面");
+        pendingFood.setLocation("中山路");
+        pendingFood.setTargetDate("2026-06-01");
+        pendingFood.setTimeText("12:00");
+        pendingFood.setNote("午餐");
+        pendingFood.setStatus(PrePlan.STATUS_PENDING);
+        pendingFood.setIsCompleted(0);
+        pendingFood.setCreatedAt("2026-06-09");
+        long planId = dbHelper.addPrePlan(pendingFood);
+
+        PrePlan saved = dbHelper.getPrePlanById((int) planId);
+        assertEquals(PrePlan.STATUS_PENDING, saved.getStatus());
+
+        dbHelper.completePrePlanAndSyncCheckIn(saved);
+        dbHelper.completePrePlanAndSyncCheckIn(saved);
+
+        List<Spot> spots = dbHelper.getSpotsForTrip(tripId);
+        assertEquals(1, spots.size());
+        assertEquals("沙茶面", spots.get(0).getName());
+        assertEquals("美食", spots.get(0).getType());
+        assertEquals((int) planId, spots.get(0).getSourcePlanId());
+        assertEquals(1, dbHelper.getPrePlanById((int) planId).getIsCompleted());
     }
 
     private Trip createTrip(int userId, String name, String destination) {

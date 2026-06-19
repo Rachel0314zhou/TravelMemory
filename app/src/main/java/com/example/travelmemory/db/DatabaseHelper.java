@@ -22,7 +22,7 @@ import java.util.List;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "travel_memory.db";
-    private static final int DATABASE_VERSION = 6;
+    private static final int DATABASE_VERSION = 8;
 
     public static final String TABLE_USER = "user";
     public static final String TABLE_TRIP = "trip";
@@ -44,13 +44,13 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL("CREATE TABLE " + TABLE_TRIP + " (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, name TEXT, destination TEXT, start_date TEXT, end_date TEXT, cover_path TEXT, mode TEXT DEFAULT 'simple_record', status TEXT DEFAULT 'during_trip', created_at TEXT)");
         db.execSQL("CREATE TABLE " + TABLE_DAY_RECORD + " (id INTEGER PRIMARY KEY AUTOINCREMENT, trip_id INTEGER, date TEXT, note TEXT, mood TEXT, created_at TEXT)");
         db.execSQL("CREATE TABLE " + TABLE_PHOTO + " (id INTEGER PRIMARY KEY AUTOINCREMENT, trip_id INTEGER, day_record_id INTEGER, image_path TEXT, created_at TEXT)");
-        db.execSQL("CREATE TABLE " + TABLE_SPOT + " (id INTEGER PRIMARY KEY AUTOINCREMENT, trip_id INTEGER, name TEXT, type TEXT, note TEXT, is_favorite INTEGER, created_at TEXT)");
+        db.execSQL("CREATE TABLE " + TABLE_SPOT + " (id INTEGER PRIMARY KEY AUTOINCREMENT, trip_id INTEGER, name TEXT, type TEXT, note TEXT, is_favorite INTEGER, source_plan_id INTEGER DEFAULT 0, created_at TEXT)");
         db.execSQL("CREATE TABLE " + TABLE_EXPENSE + " (id INTEGER PRIMARY KEY AUTOINCREMENT, trip_id INTEGER, category TEXT, amount REAL, note TEXT, date TEXT)");
         createTravelLoopTables(db);
     }
 
     private void createTravelLoopTables(SQLiteDatabase db) {
-        db.execSQL("CREATE TABLE IF NOT EXISTS " + TABLE_PRE_PLAN + " (id INTEGER PRIMARY KEY AUTOINCREMENT, trip_id INTEGER, type TEXT, title TEXT, location TEXT, target_date TEXT, note TEXT, is_completed INTEGER DEFAULT 0, created_at TEXT)");
+        db.execSQL("CREATE TABLE IF NOT EXISTS " + TABLE_PRE_PLAN + " (id INTEGER PRIMARY KEY AUTOINCREMENT, trip_id INTEGER, type TEXT, title TEXT, location TEXT, target_date TEXT, time_text TEXT, note TEXT, is_completed INTEGER DEFAULT 0, status TEXT DEFAULT 'normal', created_at TEXT)");
         db.execSQL("CREATE TABLE IF NOT EXISTS " + TABLE_PACKING_ITEM + " (id INTEGER PRIMARY KEY AUTOINCREMENT, trip_id INTEGER, category TEXT, item_name TEXT, is_selected INTEGER DEFAULT 1, is_packed INTEGER DEFAULT 0, is_custom INTEGER DEFAULT 0, created_at TEXT)");
         db.execSQL("CREATE TABLE IF NOT EXISTS " + TABLE_REGRET_ITEM + " (id INTEGER PRIMARY KEY AUTOINCREMENT, trip_id INTEGER, pre_plan_id INTEGER, title TEXT, type TEXT, reason TEXT, created_at TEXT)");
     }
@@ -82,6 +82,13 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             addColumnIfMissing(db, TABLE_USER, "gender", "TEXT");
             addColumnIfMissing(db, TABLE_USER, "travel_preference", "TEXT");
             addColumnIfMissing(db, TABLE_USER, "profile_completed", "INTEGER DEFAULT 0");
+        }
+        if (oldVersion < 7) {
+            addColumnIfMissing(db, TABLE_PRE_PLAN, "time_text", "TEXT");
+            addColumnIfMissing(db, TABLE_SPOT, "source_plan_id", "INTEGER DEFAULT 0");
+        }
+        if (oldVersion < 8) {
+            addColumnIfMissing(db, TABLE_PRE_PLAN, "status", "TEXT DEFAULT 'normal'");
         }
     }
 
@@ -524,6 +531,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put("type", spot.getType());
         values.put("note", spot.getNote());
         values.put("is_favorite", spot.getIsFavorite());
+        values.put("source_plan_id", spot.getSourcePlanId());
         values.put("created_at", spot.getCreatedAt());
         return getWritableDatabase().insert(TABLE_SPOT, null, values);
     }
@@ -534,7 +542,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         if (cursor != null) {
             if (cursor.moveToFirst()) {
                 do {
-                    list.add(new Spot(cursor.getInt(cursor.getColumnIndexOrThrow("id")), cursor.getInt(cursor.getColumnIndexOrThrow("trip_id")), getOptionalString(cursor, "name"), getOptionalString(cursor, "type"), getOptionalString(cursor, "note"), cursor.getInt(cursor.getColumnIndexOrThrow("is_favorite")), getOptionalString(cursor, "created_at")));
+                    list.add(new Spot(cursor.getInt(cursor.getColumnIndexOrThrow("id")), cursor.getInt(cursor.getColumnIndexOrThrow("trip_id")), getOptionalString(cursor, "name"), getOptionalString(cursor, "type"), getOptionalString(cursor, "note"), cursor.getInt(cursor.getColumnIndexOrThrow("is_favorite")), getOptionalInt(cursor, "source_plan_id"), getOptionalString(cursor, "created_at")));
                 } while (cursor.moveToNext());
             }
             cursor.close();
@@ -587,6 +595,25 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public List<PrePlan> getPrePlansForTrip(int tripId) {
         List<PrePlan> list = new ArrayList<>();
         Cursor cursor = getReadableDatabase().query(TABLE_PRE_PLAN, null, "trip_id=?", new String[]{String.valueOf(tripId)}, null, null, "id DESC");
+        readPrePlans(cursor, list);
+        return list;
+    }
+
+    public List<PrePlan> getPrePlansForTripSorted(int tripId) {
+        List<PrePlan> list = new ArrayList<>();
+        Cursor cursor = getReadableDatabase().query(TABLE_PRE_PLAN, null, "trip_id=?", new String[]{String.valueOf(tripId)}, null, null, "CASE WHEN target_date IS NULL OR target_date='' THEN 1 ELSE 0 END, target_date ASC, time_text ASC, id ASC");
+        readPrePlans(cursor, list);
+        return list;
+    }
+
+    public PrePlan getPrePlanById(int id) {
+        List<PrePlan> list = new ArrayList<>();
+        Cursor cursor = getReadableDatabase().query(TABLE_PRE_PLAN, null, "id=?", new String[]{String.valueOf(id)}, null, null, null);
+        readPrePlans(cursor, list);
+        return list.isEmpty() ? null : list.get(0);
+    }
+
+    private void readPrePlans(Cursor cursor, List<PrePlan> list) {
         if (cursor != null) {
             if (cursor.moveToFirst()) {
                 do {
@@ -597,14 +624,15 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                             getOptionalString(cursor, "title"),
                             getOptionalString(cursor, "location"),
                             getOptionalString(cursor, "target_date"),
+                            getOptionalString(cursor, "time_text"),
                             getOptionalString(cursor, "note"),
                             cursor.getInt(cursor.getColumnIndexOrThrow("is_completed")),
+                            getOptionalString(cursor, "status"),
                             getOptionalString(cursor, "created_at")));
                 } while (cursor.moveToNext());
             }
             cursor.close();
         }
-        return list;
     }
 
     public int updatePrePlan(PrePlan plan) {
@@ -619,6 +647,41 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         ContentValues values = new ContentValues();
         values.put("is_completed", completed ? 1 : 0);
         return getWritableDatabase().update(TABLE_PRE_PLAN, values, "id=?", new String[]{String.valueOf(id)});
+    }
+
+    public int completePrePlanAndSyncCheckIn(PrePlan plan) {
+        if (plan == null) return 0;
+        int updated = markPrePlanCompleted(plan.getId(), true);
+        if (shouldSyncPlanToSpot(plan) && !hasSpotForPrePlan(plan.getId())) {
+            Spot spot = new Spot();
+            spot.setTripId(plan.getTripId());
+            spot.setName(plan.getTitle());
+            spot.setType(planCheckInType(plan.getType()));
+            spot.setNote(plan.getNote());
+            spot.setIsFavorite(0);
+            spot.setSourcePlanId(plan.getId());
+            spot.setCreatedAt(isBlank(plan.getTargetDate()) ? nowDate() : plan.getTargetDate());
+            addSpot(spot);
+        }
+        return updated;
+    }
+
+    public boolean hasSpotForPrePlan(int prePlanId) {
+        return intQueryWithArgs("SELECT COUNT(*) FROM " + TABLE_SPOT + " WHERE source_plan_id=?", String.valueOf(prePlanId)) > 0;
+    }
+
+    private boolean shouldSyncPlanToSpot(PrePlan plan) {
+        String type = plan.getType();
+        return type != null && (type.contains("美食") || type.contains("編椋") || type.contains("地方") || type.contains("鍦") || type.contains("景点"));
+    }
+
+    private String planCheckInType(String type) {
+        if (type != null && (type.contains("美食") || type.contains("編椋"))) return "美食";
+        return "景点";
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
     }
 
     public int countPrePlansForTrip(int tripId) {
@@ -641,8 +704,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put("title", plan.getTitle());
         values.put("location", plan.getLocation());
         values.put("target_date", plan.getTargetDate());
+        values.put("time_text", plan.getTimeText());
         values.put("note", plan.getNote());
         values.put("is_completed", plan.getIsCompleted());
+        values.put("status", plan.getStatus());
         values.put("created_at", plan.getCreatedAt());
         return values;
     }

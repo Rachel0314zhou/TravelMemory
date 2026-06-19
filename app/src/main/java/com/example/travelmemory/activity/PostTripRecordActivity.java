@@ -63,6 +63,7 @@ public class PostTripRecordActivity extends AppCompatActivity implements PrePlan
             scrollView.post(() -> scrollView.fullScroll(View.FOCUS_DOWN));
         });
         findViewById(R.id.btn_post_compare).setOnClickListener(v -> openWithTrip(PlanCompareActivity.class));
+        findViewById(R.id.btn_post_report).setOnClickListener(v -> openWithTrip(TripReportActivity.class));
         findViewById(R.id.btn_post_memory).setOnClickListener(v -> openWithTrip(TripRecapActivity.class));
 
         loadPlans();
@@ -96,10 +97,9 @@ public class PostTripRecordActivity extends AppCompatActivity implements PrePlan
     }
 
     @Override
-    public void onToggle(PrePlan plan) {
-        boolean willComplete = plan.getIsCompleted() != 1;
-        dbHelper.markPrePlanCompleted(plan.getId(), willComplete);
-        Toast.makeText(this, willComplete ? "已标记为实际完成" : "已设为未完成", Toast.LENGTH_SHORT).show();
+    public void onToggle(PrePlan plan, boolean completed) {
+        dbHelper.markPrePlanCompleted(plan.getId(), completed);
+        Toast.makeText(this, completed ? "已标记为实际完成" : "已设为未完成", Toast.LENGTH_SHORT).show();
         loadPlans();
     }
 

@@ -46,6 +46,7 @@ public class SpotAdapter extends RecyclerView.Adapter<SpotAdapter.SpotViewHolder
         holder.tvName.setText(spot.getName());
         String note = spot.getNote();
         holder.tvNote.setText(note == null || note.isEmpty() ? "暂无备注" : note);
+        holder.tvSource.setText(spot.getSourcePlanId() > 0 ? "来自行前计划" : "计划外新增");
         holder.btnStar.setImageResource(spot.getIsFavorite() == 1 ? android.R.drawable.btn_star_big_on : android.R.drawable.btn_star_big_off);
         holder.btnStar.setOnClickListener(v -> {
             if (listener != null) listener.onToggleFavorite(spot, holder.getAdapterPosition(), spot.getIsFavorite() == 1 ? 0 : 1);
@@ -61,7 +62,7 @@ public class SpotAdapter extends RecyclerView.Adapter<SpotAdapter.SpotViewHolder
     }
 
     public static class SpotViewHolder extends RecyclerView.ViewHolder {
-        TextView tvType, tvName, tvNote;
+        TextView tvType, tvName, tvNote, tvSource;
         ImageButton btnStar, btnDelete;
 
         public SpotViewHolder(@NonNull View itemView) {
@@ -69,6 +70,7 @@ public class SpotAdapter extends RecyclerView.Adapter<SpotAdapter.SpotViewHolder
             tvType = itemView.findViewById(R.id.tv_spot_type_tag);
             tvName = itemView.findViewById(R.id.tv_spot_name);
             tvNote = itemView.findViewById(R.id.tv_spot_note);
+            tvSource = itemView.findViewById(R.id.tv_spot_source);
             btnStar = itemView.findViewById(R.id.btn_spot_toggle_favorite);
             btnDelete = itemView.findViewById(R.id.btn_delete_spot);
         }
