@@ -63,7 +63,7 @@ public class PostTripRecordActivity extends AppCompatActivity implements PrePlan
             scrollView.post(() -> scrollView.fullScroll(View.FOCUS_DOWN));
         });
         findViewById(R.id.btn_post_compare).setOnClickListener(v -> openWithTrip(PlanCompareActivity.class));
-        findViewById(R.id.btn_post_report).setOnClickListener(v -> openWithTrip(TripReportActivity.class));
+        findViewById(R.id.btn_post_report).setOnClickListener(v -> TripNavigator.openReport(this, tripId));
         findViewById(R.id.btn_post_memory).setOnClickListener(v -> openWithTrip(TripRecapActivity.class));
 
         loadPlans();

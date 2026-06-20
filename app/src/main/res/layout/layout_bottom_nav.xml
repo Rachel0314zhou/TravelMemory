@@ -17,7 +17,7 @@
     <TextView
         android:id="@+id/bottom_nav_search"
         style="@style/BottomNavText"
-        android:text="计划" />
+        android:text="日程" />
 
     <TextView
         android:id="@+id/bottom_nav_memory"

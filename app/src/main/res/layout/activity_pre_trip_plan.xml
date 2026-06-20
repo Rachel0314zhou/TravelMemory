@@ -27,7 +27,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
             android:layout_weight="1"
-            android:text="行前准备"
+            android:text="旅行准备"
             android:textColor="@color/white"
             android:textSize="18sp"
             android:textStyle="bold" />
@@ -40,18 +40,6 @@
         android:padding="16dp"
         android:textColor="@color/text_secondary"
         android:textSize="14sp" />
-
-    <Button
-        android:id="@+id/btn_pre_plan_select_trip"
-        android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:layout_marginHorizontal="16dp"
-        android:layout_marginBottom="10dp"
-        android:background="@drawable/btn_primary"
-        android:text="选择旅行"
-        android:textColor="@color/white"
-        android:textSize="16sp"
-        android:textStyle="bold" />
 
     <HorizontalScrollView
         android:layout_width="match_parent"
@@ -70,14 +58,14 @@
     </HorizontalScrollView>
 
     <Button
-        android:id="@+id/btn_skip_pre_trip"
+        android:id="@+id/btn_add_pre_plan"
         android:layout_width="match_parent"
         android:layout_height="48dp"
         android:layout_marginHorizontal="16dp"
         android:layout_marginBottom="10dp"
-        android:background="@drawable/btn_secondary"
-        android:text="开始旅行记录"
-        android:textColor="@color/primary"
+        android:background="@drawable/btn_primary"
+        android:text="添加行前计划"
+        android:textColor="@color/white"
         android:textSize="15sp"
         android:textStyle="bold" />
 

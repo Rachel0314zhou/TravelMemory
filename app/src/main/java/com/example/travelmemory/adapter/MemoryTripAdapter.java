@@ -11,11 +11,11 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.R;
-import com.example.travelmemory.activity.TripReportActivity;
 import com.example.travelmemory.model.Trip;
 import com.example.travelmemory.utils.DateUtils;
 import com.example.travelmemory.utils.ImageUtils;
 import com.example.travelmemory.utils.TripNavigator;
+import com.example.travelmemory.utils.TravelConstants;
 
 import java.util.List;
 
@@ -42,12 +42,12 @@ public class MemoryTripAdapter extends RecyclerView.Adapter<MemoryTripAdapter.Me
         holder.tvName.setText(trip.getName());
         holder.tvDestination.setText("\u76ee\u7684\u5730\uff1a" + trip.getDestination());
         holder.tvDates.setText(trip.getStartDate() + " ~ " + trip.getEndDate());
+        holder.tvStatus.setText("当前阶段：" + TravelConstants.formatTripStatusText(trip.getStatus()));
         long days = DateUtils.getDaysBetween(trip.getStartDate(), trip.getEndDate());
         holder.tvDays.setText(days + " \u5929");
         ImageUtils.displayLocalImage(holder.ivCover, trip.getCoverPath(), R.drawable.travel_placeholder);
         holder.itemView.setContentDescription("Travel Memorial Report");
-        holder.itemView.setOnClickListener(v ->
-                TripNavigator.openFeature(context, TripReportActivity.class, trip.getId()));
+        holder.itemView.setOnClickListener(v -> TripNavigator.openReport(context, trip.getId()));
     }
 
     @Override
@@ -61,6 +61,7 @@ public class MemoryTripAdapter extends RecyclerView.Adapter<MemoryTripAdapter.Me
         TextView tvDestination;
         TextView tvDates;
         TextView tvDays;
+        TextView tvStatus;
 
         MemoryTripViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -69,6 +70,7 @@ public class MemoryTripAdapter extends RecyclerView.Adapter<MemoryTripAdapter.Me
             tvDestination = itemView.findViewById(R.id.tv_trip_destination);
             tvDates = itemView.findViewById(R.id.tv_trip_dates);
             tvDays = itemView.findViewById(R.id.tv_trip_days);
+            tvStatus = itemView.findViewById(R.id.tv_trip_status);
         }
     }
 }

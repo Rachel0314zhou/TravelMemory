@@ -293,7 +293,7 @@
         <TextView android:id="@+id/menu_pre_trip" style="@style/DrawerMenuText" android:text="行前准备" />
         <TextView android:id="@+id/menu_during_trip" style="@style/DrawerMenuText" android:text="旅行记录" />
         <TextView android:id="@+id/menu_post_trip" style="@style/DrawerMenuText" android:text="旅行整理" />
-        <TextView android:id="@+id/menu_memory" style="@style/DrawerMenuText" android:text="回忆/回顾" />
+        <TextView android:id="@+id/menu_memory" style="@style/DrawerMenuText" android:text="旅行回忆" />
         <TextView android:id="@+id/menu_settings" style="@style/DrawerMenuText" android:text="设置" />
 
         <Space

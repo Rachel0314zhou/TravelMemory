@@ -1,8 +1,9 @@
 package com.example.travelmemory.activity;
 
+import android.content.ClipData;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
-import android.provider.MediaStore;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -23,7 +24,10 @@ import com.example.travelmemory.utils.ImageUtils;
 import com.example.travelmemory.utils.SessionManager;
 import com.example.travelmemory.utils.TravelConstants;
 
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.List;
+import java.util.Locale;
 
 public class PhotoActivity extends AppCompatActivity {
 
@@ -57,12 +61,16 @@ public class PhotoActivity extends AppCompatActivity {
         findViewById(R.id.btn_photo_back).setOnClickListener(v -> finish());
         rvPhotos.setLayoutManager(new GridLayoutManager(this, 3));
 
-        btnGallery.setOnClickListener(v -> {
-            Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-            startActivityForResult(intent, REQUEST_CODE_ALBUM);
-        });
+        btnGallery.setOnClickListener(v -> choosePhotosFromAlbum());
 
         loadPhotos();
+    }
+
+    private void choosePhotosFromAlbum() {
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.setType("image/*");
+        intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+        startActivityForResult(Intent.createChooser(intent, "选择旅行照片"), REQUEST_CODE_ALBUM);
     }
 
     private void loadPhotos() {
@@ -99,23 +107,42 @@ public class PhotoActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode != RESULT_OK) return;
+        if (requestCode != REQUEST_CODE_ALBUM || data == null) return;
 
-        String savedPath = "";
-        if (requestCode == REQUEST_CODE_ALBUM && data != null && data.getData() != null) {
-            savedPath = ImageUtils.copyImageToAppDirectory(this, data.getData());
+        int savedCount = 0;
+        ClipData clipData = data.getClipData();
+        if (clipData != null) {
+            for (int i = 0; i < clipData.getItemCount(); i++) {
+                if (saveSelectedAlbumPhoto(clipData.getItemAt(i).getUri())) {
+                    savedCount++;
+                }
+            }
+        } else if (data.getData() != null) {
+            if (saveSelectedAlbumPhoto(data.getData())) {
+                savedCount++;
+            }
         }
 
-        if (!savedPath.isEmpty()) {
-            Photo photo = new Photo();
-            photo.setTripId(tripId);
-            photo.setDayRecordId(-1);
-            photo.setImagePath(savedPath);
-            photo.setCreatedAt("2026-06-09");
-            dbHelper.addPhoto(photo);
-            Toast.makeText(this, "照片保存成功", Toast.LENGTH_SHORT).show();
+        if (savedCount > 0) {
+            Toast.makeText(this, "已保存 " + savedCount + " 张照片", Toast.LENGTH_SHORT).show();
             loadPhotos();
         } else {
             Toast.makeText(this, "添加照片失败", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private boolean saveSelectedAlbumPhoto(Uri uri) {
+        String savedPath = ImageUtils.copyImageToAppDirectory(this, uri);
+        if (savedPath.isEmpty()) return false;
+        Photo photo = new Photo();
+        photo.setTripId(tripId);
+        photo.setDayRecordId(-1);
+        photo.setImagePath(savedPath);
+        photo.setCreatedAt(todayText());
+        return dbHelper.addPhoto(photo) != -1;
+    }
+
+    private String todayText() {
+        return new SimpleDateFormat("yyyy-MM-dd", Locale.CHINA).format(Calendar.getInstance().getTime());
     }
 }

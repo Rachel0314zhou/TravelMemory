@@ -20,6 +20,10 @@ public final class TripNavigator {
         context.startActivity(intent);
     }
 
+    public static boolean openReport(Context context, int tripId) {
+        return TripReportAccess.openReport(context, tripId);
+    }
+
     public static void openWithTripAndDate(Context context, Class<?> targetActivityClass, int tripId, String recordDate) {
         Intent intent = new Intent(context, targetActivityClass);
         intent.putExtra(TravelConstants.EXTRA_TRIP_ID, tripId);

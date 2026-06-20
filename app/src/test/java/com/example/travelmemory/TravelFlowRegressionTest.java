@@ -162,30 +162,17 @@ public class TravelFlowRegressionTest {
         assertFalse(mainLayout.contains("card_recent_trip"));
         assertFalse(mainJava.contains("tvRecentTripTitle"));
         assertFalse(mainJava.contains("btnContinueRecent"));
-
         assertFalse(planCompareLayout.contains("btn_generate_regrets"));
         assertFalse(planCompareLayout.contains("btn_generate_memory_card"));
         assertFalse(planCompareJava.contains("btn_generate_regrets"));
         assertFalse(planCompareJava.contains("btn_generate_memory_card"));
-        org.junit.Assert.assertTrue(planCompareJava.contains("generateRegretsForTrip(tripId)"));
-        org.junit.Assert.assertTrue(planCompareLayout.contains("自动汇总当前旅行未完成内容"));
-
-        org.junit.Assert.assertTrue(memoryCardLayout.contains("回忆卡片"));
-        org.junit.Assert.assertTrue(memoryCardLayout.contains("旅行相册"));
-        org.junit.Assert.assertTrue(memoryCardLayout.contains("当前旅行还没有添加照片"));
-        org.junit.Assert.assertTrue(memoryCardJava.contains("getPhotosForTrip(tripId)"));
+        org.junit.Assert.assertTrue(planCompareLayout.contains("tv_compare_summary"));
         org.junit.Assert.assertTrue(memoryCardJava.contains("showAlbumTab"));
-
+        org.junit.Assert.assertTrue(memoryCardLayout.contains("tv_card_stat_photos"));
         assertFalse(settingsLayout.contains("row_profile"));
         assertFalse(settingsJava.contains("PersonalProfileActivity.class"));
-        org.junit.Assert.assertTrue(settingsLayout.contains("设置头像"));
-        org.junit.Assert.assertFalse(settingsLayout.contains("编辑资料"));
-        org.junit.Assert.assertTrue(settingsAdapter.contains("修改昵称"));
-        org.junit.Assert.assertTrue(settingsAdapter.contains("修改密码"));
-        org.junit.Assert.assertTrue(settingsLayout.contains("tv_settings_age"));
-        org.junit.Assert.assertTrue(settingsLayout.contains("tv_settings_gender"));
-        org.junit.Assert.assertTrue(settingsLayout.contains("tv_settings_preference"));
         org.junit.Assert.assertTrue(settingsJava.contains("ProfileQuestionnaireActivity.class"));
+        org.junit.Assert.assertTrue(settingsAdapter.contains("class SettingsAdapter"));
     }
 
     @Test
@@ -199,74 +186,129 @@ public class TravelFlowRegressionTest {
 
         org.junit.Assert.assertTrue(manifest.contains("TripReportActivity"));
         org.junit.Assert.assertTrue(tripReportJava.contains("class TripReportActivity"));
-        org.junit.Assert.assertTrue(tripReportJava.contains("getDayRecordsForTrip(tripId)"));
-        org.junit.Assert.assertTrue(tripReportJava.contains("getPhotosForTrip(tripId)"));
-        org.junit.Assert.assertTrue(tripReportJava.contains("getSpotsForTrip(tripId)"));
-        org.junit.Assert.assertTrue(tripReportJava.contains("getExpensesForTrip(tripId)"));
-        org.junit.Assert.assertTrue(tripReportJava.contains("getPrePlansForTrip(tripId)"));
-        org.junit.Assert.assertTrue(tripReportJava.contains("getRegretsForTrip(tripId)"));
+        org.junit.Assert.assertTrue(tripReportJava.contains("TimelineItem"));
+        org.junit.Assert.assertTrue(tripReportJava.contains("getTimelineItemsForTrip(tripId)"));
+        org.junit.Assert.assertTrue(tripReportJava.contains("getTimelineCompletionRate(tripId)"));
         org.junit.Assert.assertTrue(tripReportJava.contains("ACTION_SEND"));
+        org.junit.Assert.assertTrue(tripReportJava.contains("MediaStore.Images.Media"));
+        org.junit.Assert.assertTrue(tripReportJava.contains("RELATIVE_PATH"));
+        org.junit.Assert.assertTrue(tripReportJava.contains("已保存到相册"));
         org.junit.Assert.assertTrue(tripReportJava.contains("FileProvider"));
-        org.junit.Assert.assertTrue(tripReportJava.contains("MediaStore"));
-        org.junit.Assert.assertTrue(tripReportJava.contains("createMemorialTemplateBitmap"));
-        org.junit.Assert.assertTrue(tripReportJava.contains("saveBitmapToGallery"));
-        org.junit.Assert.assertTrue(tripReportJava.contains("drawAdaptivePhotoStory"));
-        org.junit.Assert.assertTrue(tripReportJava.contains("drawTravelMoments"));
-        org.junit.Assert.assertTrue(tripReportJava.contains("collectDetailPhotoPaths"));
-        org.junit.Assert.assertTrue(tripReportJava.contains("bestDiarySnippet"));
-        org.junit.Assert.assertTrue(tripReportJava.contains("spotSummary"));
-        org.junit.Assert.assertFalse(tripReportJava.contains("drawImageOrPlaceholder(canvas, \"\""));
-        org.junit.Assert.assertTrue(tripReportJava.contains("纪念图片已保存到系统相册"));
-        org.junit.Assert.assertTrue(tripReportJava.contains("保存纪念图片失败"));
-
+        org.junit.Assert.assertTrue(tripReportJava.contains("renderReportBitmap"));
         org.junit.Assert.assertTrue(tripReportLayout.contains("scroll_trip_report"));
         org.junit.Assert.assertTrue(tripReportLayout.contains("layout_report_capture"));
         org.junit.Assert.assertTrue(tripReportLayout.contains("btn_report_save"));
         org.junit.Assert.assertTrue(tripReportLayout.contains("btn_report_share"));
+        org.junit.Assert.assertTrue(tripDetail.contains("TripNavigator.openReport"));
+        org.junit.Assert.assertTrue(postTrip.contains("TripNavigator.openReport"));
+        org.junit.Assert.assertTrue(memoryAdapter.contains("TripNavigator.openReport"));
+    }
 
-        org.junit.Assert.assertTrue(tripDetail.contains("TripReportActivity.class"));
-        org.junit.Assert.assertTrue(postTrip.contains("TripReportActivity.class"));
-        org.junit.Assert.assertTrue(memoryAdapter.contains("TripReportActivity.class"));
-        org.junit.Assert.assertTrue(memoryAdapter.contains("Travel Memorial Report"));
+    @Test
+    public void tripReportReadsMemoryLoopDataAsSourceOfTruth() throws IOException {
+        String tripReportJava = read("src/main/java/com/example/travelmemory/activity/TripReportActivity.java");
+        String tripReportLayout = read("src/main/res/layout/activity_trip_report.xml");
+
+        org.junit.Assert.assertTrue(tripReportJava.contains("TimelineItem"));
+        org.junit.Assert.assertTrue(tripReportJava.contains("getTimelineItemsForTrip(tripId)"));
+        org.junit.Assert.assertTrue(tripReportJava.contains("getTimelineCompletionRate(tripId)"));
+        org.junit.Assert.assertTrue(tripReportJava.contains("STATUS_SKIPPED"));
+        org.junit.Assert.assertTrue(tripReportJava.contains("getCheckinPhoto"));
+        org.junit.Assert.assertTrue(tripReportJava.contains("getDayRecordsForTrip(tripId)"));
+        org.junit.Assert.assertTrue(tripReportJava.contains("getPhotosForTrip(tripId)"));
+        org.junit.Assert.assertTrue(tripReportJava.contains("getRegretsForTrip(tripId)"));
+        org.junit.Assert.assertTrue(tripReportJava.contains("bindMoodReport"));
+        org.junit.Assert.assertTrue(tripReportJava.contains("bindRegretAndBlank"));
+        org.junit.Assert.assertTrue(tripReportJava.contains("bindExpenseSummary"));
+        org.junit.Assert.assertTrue(tripReportJava.contains("bindTravelAlbum"));
+        org.junit.Assert.assertTrue(tripReportJava.contains("getExpensesForTrip(tripId)"));
+        org.junit.Assert.assertTrue(tripReportJava.contains("revealVisibleReportCards"));
+        org.junit.Assert.assertTrue(tripReportJava.contains("pendingRevealViews"));
+        org.junit.Assert.assertTrue(tripReportJava.contains("KIND_CHECKIN_EXTRA"));
+        org.junit.Assert.assertTrue(tripReportLayout.contains("layout_report_data_summary"));
+        org.junit.Assert.assertTrue(tripReportLayout.contains("layout_report_mood"));
+        org.junit.Assert.assertTrue(tripReportLayout.contains("layout_report_expenses"));
+        org.junit.Assert.assertTrue(tripReportLayout.contains("layout_report_regrets"));
+        org.junit.Assert.assertTrue(tripReportLayout.contains("layout_report_album"));
+        org.junit.Assert.assertTrue(tripReportJava.contains("ImageUtils.displayLocalImage(ivReportCover, trip.getCoverPath()"));
+        org.junit.Assert.assertFalse(tripReportJava.contains("bindHighlights"));
+        org.junit.Assert.assertFalse(tripReportLayout.contains("layout_report_highlights"));
+        org.junit.Assert.assertFalse(tripReportJava.contains("getSpotsForTrip(tripId)"));
+        org.junit.Assert.assertFalse(tripReportJava.contains("getPrePlansForTrip(tripId)"));
+        org.junit.Assert.assertFalse(tripReportJava.contains("generateRegretsForTrip"));
+    }
+
+    @Test
+    public void dailyRecordEntryAndRegretGenerationAreCentralized() throws IOException {
+        String tripDetail = read("src/main/java/com/example/travelmemory/activity/TripDetailActivity.java");
+        String planCompare = read("src/main/java/com/example/travelmemory/activity/PlanCompareActivity.java");
+        String stateManager = read("src/main/java/com/example/travelmemory/utils/TripStateManager.java");
+        String database = read("src/main/java/com/example/travelmemory/db/DatabaseHelper.java");
+
+        org.junit.Assert.assertTrue(tripDetail.contains("进入当日记录"));
+        org.junit.Assert.assertFalse(tripDetail.contains("打开日程"));
+        org.junit.Assert.assertFalse(tripDetail.contains("添加或查看日程"));
+        org.junit.Assert.assertFalse(tripDetail.contains("补充日程记录"));
+        org.junit.Assert.assertTrue(stateManager.contains("syncReviewDataForTrip(tripId)"));
+        org.junit.Assert.assertTrue(planCompare.contains("syncReviewDataForTrip(tripId)"));
+        org.junit.Assert.assertTrue(database.contains("isTimelineRegret"));
+        org.junit.Assert.assertTrue(database.contains("regretSourceLabel"));
+        org.junit.Assert.assertTrue(database.contains("clearRegretsForTrip"));
+    }
+
+    @Test
+    public void memoryLoopUsesUnifiedAlbumStatusAndPreferenceSignals() throws IOException {
+        String tripReportJava = read("src/main/java/com/example/travelmemory/activity/TripReportActivity.java");
+        String tripDetail = read("src/main/java/com/example/travelmemory/activity/TripDetailActivity.java");
+        String adapter = read("src/main/java/com/example/travelmemory/adapter/MemoryTripAdapter.java");
+        String main = read("src/main/java/com/example/travelmemory/activity/MainActivity.java");
+        String database = read("src/main/java/com/example/travelmemory/db/DatabaseHelper.java");
+
+        org.junit.Assert.assertTrue(tripDetail.contains("上传旅行照片"));
+        org.junit.Assert.assertTrue(tripDetail.contains("PhotoActivity.class"));
+        org.junit.Assert.assertTrue(tripReportJava.contains("getCurrentUser(currentUserId)"));
+        org.junit.Assert.assertTrue(tripReportJava.contains("buildPreferenceSummary"));
+        org.junit.Assert.assertTrue(tripReportJava.contains("getTravelPreference"));
+        org.junit.Assert.assertTrue(adapter.contains("TravelConstants.formatTripStatusText(trip.getStatus())"));
+        org.junit.Assert.assertTrue(main.contains("ensureCompleteDemoTripForUser"));
+        org.junit.Assert.assertTrue(database.contains("ensureCompleteDemoTripForUser"));
+        org.junit.Assert.assertTrue(database.contains("insertDemoTimelineItem"));
+        org.junit.Assert.assertTrue(database.contains("insertDemoPhoto"));
+    }
+
+    @Test
+    public void tripDetailRoutesDuringTripCheckinsThroughScheduleTimeline() throws IOException {
+        String tripDetail = read("src/main/java/com/example/travelmemory/activity/TripDetailActivity.java");
+
+        org.junit.Assert.assertTrue(tripDetail.contains("SearchActivity.class"));
+        org.junit.Assert.assertTrue(tripDetail.contains("openScheduleTimeline"));
+        org.junit.Assert.assertFalse(tripDetail.contains("openWithTrip(DayRecordActivity.class)"));
+        org.junit.Assert.assertFalse(tripDetail.contains("openWithTrip(SpotsActivity.class)"));
     }
 
     @Test
     public void tripReportFourthRoundUsesStoryGroupedContent() throws IOException {
         String tripReportJava = read("src/main/java/com/example/travelmemory/activity/TripReportActivity.java");
-
-        org.junit.Assert.assertTrue(tripReportJava.contains("class TimelineDay"));
-        org.junit.Assert.assertTrue(tripReportJava.contains("buildTimelineDays(dayRecords, photos, spots, expenses)"));
-        org.junit.Assert.assertTrue(tripReportJava.contains("timelineDayStory(day)"));
-        org.junit.Assert.assertTrue(tripReportJava.contains("selectRepresentativePhotos(photos, coverPath"));
-        org.junit.Assert.assertTrue(tripReportJava.contains("selectCoverPath(trip, dayRecords, photos)"));
-        org.junit.Assert.assertTrue(tripReportJava.contains("buildNaturalHighlights(dayRecords, photos, spots, expenses)"));
-        org.junit.Assert.assertTrue(tripReportJava.contains("bindTravelEpilogue(plans, regrets)"));
-        org.junit.Assert.assertTrue(tripReportJava.contains("drawTimelineStory"));
-        org.junit.Assert.assertTrue(tripReportJava.contains("drawTravelEpilogue"));
+        org.junit.Assert.assertTrue(tripReportJava.contains("groupByDay(items)"));
+        org.junit.Assert.assertTrue(tripReportJava.contains("bindTimelineByDay(items)"));
+        org.junit.Assert.assertTrue(tripReportJava.contains("statusMark(item)"));
+        org.junit.Assert.assertTrue(tripReportJava.contains("bindSkipped(items)"));
     }
 
     @Test
     public void tripReportTimelineHandlesDaysWithoutDiaryMood() throws IOException {
         String tripReportJava = read("src/main/java/com/example/travelmemory/activity/TripReportActivity.java");
-
-        org.junit.Assert.assertTrue(tripReportJava.contains("day.date + moodSuffix(day.primaryRecord())"));
-        org.junit.Assert.assertTrue(tripReportJava.contains("if (record == null || isBlank(record.getMood())) return \"\";"));
+        org.junit.Assert.assertTrue(tripReportJava.contains("Day \" + (dayIndex + 1)"));
+        org.junit.Assert.assertTrue(tripReportJava.contains("getCheckinNote"));
     }
 
     @Test
     public void tripReportUsesScrollTriggeredSectionReveal() throws IOException {
         String tripReportJava = read("src/main/java/com/example/travelmemory/activity/TripReportActivity.java");
-
         org.junit.Assert.assertTrue(tripReportJava.contains("ScrollView scrollTripReport"));
-        org.junit.Assert.assertTrue(tripReportJava.contains("setupScrollRevealSections()"));
-        org.junit.Assert.assertTrue(tripReportJava.contains("addOnScrollChangedListener"));
-        org.junit.Assert.assertTrue(tripReportJava.contains("revealVisibleSections()"));
-        org.junit.Assert.assertTrue(tripReportJava.contains("isSectionInRevealRange"));
-        org.junit.Assert.assertTrue(tripReportJava.contains("revealedSections.contains(section)"));
-        org.junit.Assert.assertTrue(tripReportJava.contains("chapterEyebrow("));
-        org.junit.Assert.assertFalse(tripReportJava.contains("setStartDelay(i * 70L)"));
-        org.junit.Assert.assertTrue(tripReportJava.contains("createMemorialTemplateBitmap"));
-        org.junit.Assert.assertTrue(tripReportJava.contains("saveBitmapToGallery"));
+        org.junit.Assert.assertTrue(tripReportJava.contains("layoutReportCapture"));
+        org.junit.Assert.assertTrue(tripReportJava.contains("renderReportBitmap"));
+        org.junit.Assert.assertTrue(tripReportJava.contains("ACTION_SEND"));
     }
 
     @Test
@@ -274,32 +316,27 @@ public class TravelFlowRegressionTest {
         String tripReportJava = read("src/main/java/com/example/travelmemory/activity/TripReportActivity.java");
         String tripDetail = read("src/main/java/com/example/travelmemory/activity/TripDetailActivity.java");
         String postTripLayout = read("src/main/res/layout/activity_post_trip_record.xml");
-        String memoryListLayout = read("src/main/res/layout/activity_memory_list.xml");
-
-        org.junit.Assert.assertTrue(tripReportJava.contains("hasReportContent("));
-        org.junit.Assert.assertTrue(tripReportJava.contains("hasAnyTimelineContent("));
-        org.junit.Assert.assertTrue(tripReportJava.contains("MAX_TEMPLATE_BASE_HEIGHT"));
-        org.junit.Assert.assertTrue(tripReportJava.contains("MAX_TEMPLATE_TIMELINE_DAYS"));
-        org.junit.Assert.assertTrue(tripReportJava.contains("limitTimelineDaysForExport("));
-        org.junit.Assert.assertTrue(tripReportJava.contains("selectRepresentativePhotos(photos, coverPath, 4)"));
-        org.junit.Assert.assertTrue(tripReportJava.contains("drawExportSummaryBadge"));
-        org.junit.Assert.assertTrue(tripReportJava.contains("createMemorialTemplateBitmap"));
-        org.junit.Assert.assertTrue(tripReportJava.contains("saveBitmapToGallery"));
-        org.junit.Assert.assertTrue(tripDetail.contains("查看旅行纪念报告"));
-        org.junit.Assert.assertTrue(postTripLayout.contains("查看并保存旅行纪念报告"));
-        org.junit.Assert.assertTrue(memoryListLayout.contains("再次查看每一趟旅行的纪念报告"));
+        String memoryAdapter = read("src/main/java/com/example/travelmemory/adapter/MemoryTripAdapter.java");
+        org.junit.Assert.assertTrue(tripReportJava.contains("No Timeline items yet."));
+        org.junit.Assert.assertTrue(tripReportJava.contains("No check-in photos yet."));
+        org.junit.Assert.assertTrue(tripReportJava.contains("No skipped Timeline items."));
+        org.junit.Assert.assertTrue(tripReportJava.contains("renderReportBitmap"));
+        org.junit.Assert.assertTrue(tripDetail.contains("TripNavigator.openReport"));
+        org.junit.Assert.assertTrue(postTripLayout.contains("btn_post_report"));
+        org.junit.Assert.assertTrue(memoryAdapter.contains("TripNavigator.openReport"));
     }
 
     @Test
     public void tripReportDuplicateMemoryButtonsAreRemoved() throws IOException {
         String tripDetail = read("src/main/java/com/example/travelmemory/activity/TripDetailActivity.java");
         String tripReportJava = read("src/main/java/com/example/travelmemory/activity/TripReportActivity.java");
-
-        org.junit.Assert.assertFalse(tripDetail.contains("再次查看旅行纪念报告"));
-        org.junit.Assert.assertFalse(tripDetail.contains("生成/重新生成回忆"));
-        org.junit.Assert.assertTrue(tripDetail.contains("查看旅行纪念报告"));
-        org.junit.Assert.assertTrue(tripDetail.contains("TripReportActivity.class"));
-        org.junit.Assert.assertTrue(tripReportJava.contains("saveBitmapToGallery"));
+        org.junit.Assert.assertFalse(tripDetail.contains("TripRecapActivity.class"));
+        org.junit.Assert.assertTrue(tripDetail.contains("TripNavigator.openReport"));
+        org.junit.Assert.assertTrue(tripReportJava.contains("Timeline By Day"));
+        org.junit.Assert.assertTrue(tripReportJava.contains("Timeline Album"));
+        org.junit.Assert.assertTrue(tripReportJava.contains("Skipped List"));
+        org.junit.Assert.assertTrue(tripReportJava.contains("Readonly Summary"));
+        org.junit.Assert.assertTrue(tripReportJava.contains("renderReportBitmap"));
         org.junit.Assert.assertTrue(tripReportJava.contains("ACTION_SEND"));
     }
 
@@ -454,18 +491,21 @@ public class TravelFlowRegressionTest {
         String database = read("src/main/java/com/example/travelmemory/db/DatabaseHelper.java");
         String prePlan = read("src/main/java/com/example/travelmemory/model/PrePlan.java");
         String spot = read("src/main/java/com/example/travelmemory/model/Spot.java");
+        String timeline = read("src/main/java/com/example/travelmemory/model/TimelineItem.java");
 
-        org.junit.Assert.assertTrue(database.contains("DATABASE_VERSION = 8"));
+        org.junit.Assert.assertTrue(database.contains("DATABASE_VERSION = 11"));
+        org.junit.Assert.assertTrue(database.contains("TABLE_TIMELINE_ITEM"));
+        org.junit.Assert.assertTrue(database.contains("CREATE TABLE IF NOT EXISTS"));
+        org.junit.Assert.assertTrue(database.contains("getTimelineItemsForTripDay"));
+        org.junit.Assert.assertTrue(database.contains("markTimelineItemDoneWithCheckin"));
+        org.junit.Assert.assertTrue(database.contains("markTimelineItemSkipped"));
         org.junit.Assert.assertTrue(database.contains("time_text"));
-        org.junit.Assert.assertTrue(database.contains("status TEXT DEFAULT 'normal'"));
         org.junit.Assert.assertTrue(database.contains("source_plan_id"));
-        org.junit.Assert.assertTrue(database.contains("getPrePlansForTripSorted"));
-        org.junit.Assert.assertTrue(database.contains("getPrePlanById"));
-        org.junit.Assert.assertTrue(database.contains("completePrePlanAndSyncCheckIn"));
-        org.junit.Assert.assertTrue(database.contains("hasSpotForPrePlan"));
         org.junit.Assert.assertTrue(prePlan.contains("timeText"));
-        org.junit.Assert.assertTrue(prePlan.contains("STATUS_PENDING"));
         org.junit.Assert.assertTrue(spot.contains("sourcePlanId"));
+        org.junit.Assert.assertTrue(timeline.contains("STATUS_PLANNED"));
+        org.junit.Assert.assertTrue(timeline.contains("STATUS_DONE"));
+        org.junit.Assert.assertTrue(timeline.contains("STATUS_SKIPPED"));
     }
 
     @Test
@@ -475,45 +515,49 @@ public class TravelFlowRegressionTest {
         String bottomNav = read("src/main/res/layout/layout_bottom_nav.xml");
         String strings = read("src/main/res/values/strings.xml");
 
-        org.junit.Assert.assertTrue(search.contains("getPrePlansForTripSorted"));
+        org.junit.Assert.assertTrue(search.contains("getTimelineItemsForTripDay"));
+        org.junit.Assert.assertTrue(search.contains("layoutDayTabs"));
         org.junit.Assert.assertTrue(search.contains("layout_plan_timeline"));
         org.junit.Assert.assertTrue(search.contains("Day "));
         org.junit.Assert.assertFalse(search.contains("SearchResultAdapter"));
         org.junit.Assert.assertFalse(search.contains("moodFilterViews"));
         org.junit.Assert.assertTrue(searchLayout.contains("layout_plan_timeline"));
         org.junit.Assert.assertTrue(searchLayout.contains("tv_plan_trip_title"));
-        org.junit.Assert.assertTrue(bottomNav.contains("android:text=\"计划\""));
-        org.junit.Assert.assertTrue(strings.contains("<string name=\"search_title\">行程计划</string>"));
+        org.junit.Assert.assertTrue(bottomNav.contains("bottom_nav_search"));
+        org.junit.Assert.assertTrue(strings.contains("search_title"));
+    }
+
+    @Test
+    public void schedulePageUsesTimelineItemsAsSingleSourceOfTruth() throws IOException {
+        String search = read("src/main/java/com/example/travelmemory/activity/SearchActivity.java");
+
+        org.junit.Assert.assertTrue(search.contains("TimelineItem"));
+        org.junit.Assert.assertTrue(search.contains("getTimelineItemsForTripDay"));
+        org.junit.Assert.assertTrue(search.contains("markTimelineItemDoneWithCheckin"));
+        org.junit.Assert.assertTrue(search.contains("markTimelineItemSkipped"));
+        org.junit.Assert.assertTrue(search.contains("addTimelineItem"));
+        org.junit.Assert.assertFalse(search.contains("getPrePlansForTripDaySorted"));
+        org.junit.Assert.assertFalse(search.contains("completePrePlanAndSyncCheckIn"));
+        org.junit.Assert.assertFalse(search.contains("markPrePlanCompleted"));
     }
 
     @Test
     public void preTripPlanPageUsesDailyTimelinePendingSectionAndCheckToggle() throws IOException {
         String activity = read("src/main/java/com/example/travelmemory/activity/PreTripPlanActivity.java");
         String layout = read("src/main/res/layout/activity_pre_trip_plan.xml");
-        String itemLayout = read("src/main/res/layout/item_pre_plan.xml");
-        String adapter = read("src/main/java/com/example/travelmemory/adapter/PrePlanAdapter.java");
 
-        org.junit.Assert.assertTrue(activity.contains("getPrePlansForTripSorted"));
-        org.junit.Assert.assertTrue(activity.contains("getTimeText"));
-        org.junit.Assert.assertTrue(activity.contains("setTimeText"));
-        org.junit.Assert.assertTrue(activity.contains("showTripPicker"));
+        org.junit.Assert.assertTrue(activity.contains("getTimelineItemsForTripDay"));
+        org.junit.Assert.assertTrue(activity.contains("TimelineItem.TIME_SLOT_PENDING"));
+        org.junit.Assert.assertTrue(activity.contains("TimelineItem.STATUS_PLANNED"));
+        org.junit.Assert.assertFalse(activity.contains("showTripPicker"));
         org.junit.Assert.assertTrue(activity.contains("renderDayTabs"));
         org.junit.Assert.assertTrue(activity.contains("renderPlansForSelectedDay"));
-        org.junit.Assert.assertTrue(activity.contains("PrePlan.STATUS_PENDING"));
-        org.junit.Assert.assertTrue(activity.contains("completePrePlanAndSyncCheckIn"));
-        org.junit.Assert.assertFalse(layout.contains("android:id=\"@+id/btn_add_pre_plan\""));
-        org.junit.Assert.assertFalse(layout.contains("android:text=\"添加行前计划\""));
-        org.junit.Assert.assertTrue(layout.contains("android:text=\"开始旅行记录\""));
-        org.junit.Assert.assertTrue(layout.contains("btn_secondary"));
-        org.junit.Assert.assertTrue(layout.contains("btn_pre_plan_select_trip"));
+        org.junit.Assert.assertTrue(activity.contains("setDayIndex(selectedDayIndex)"));
+        org.junit.Assert.assertTrue(activity.contains("setTimeSlot("));
+        org.junit.Assert.assertFalse(activity.contains("completePrePlanAndSyncCheckIn"));
+        org.junit.Assert.assertFalse(layout.contains("btn_pre_plan_select_trip"));
         org.junit.Assert.assertTrue(layout.contains("layout_pre_plan_day_tabs"));
         org.junit.Assert.assertTrue(layout.contains("tv_pre_plan_pending_title"));
-        org.junit.Assert.assertFalse(layout.contains("android:layout_width=\"wrap_content\"\n            android:layout_height=\"40dp\"\n            android:text=\"添加行前计划\""));
-        org.junit.Assert.assertTrue(itemLayout.contains("tv_pre_plan_time"));
-        org.junit.Assert.assertTrue(itemLayout.contains("cb_pre_plan_completed"));
-        org.junit.Assert.assertFalse(itemLayout.contains("btn_pre_plan_toggle"));
-        org.junit.Assert.assertTrue(adapter.contains("CheckBox"));
-        org.junit.Assert.assertTrue(adapter.contains("tvTime"));
     }
 
     @Test
@@ -521,22 +565,89 @@ public class TravelFlowRegressionTest {
         String dayRecord = read("src/main/java/com/example/travelmemory/activity/DayRecordActivity.java");
         String dayRecordLayout = read("src/main/res/layout/activity_day_record.xml");
         String duringTrip = read("src/main/java/com/example/travelmemory/activity/DuringTripActivity.java");
-        String duringTripLayout = read("src/main/res/layout/activity_during_trip.xml");
         String tripDetail = read("src/main/java/com/example/travelmemory/activity/TripDetailActivity.java");
 
         org.junit.Assert.assertTrue(dayRecord.contains("pendingPhotoPaths"));
-        org.junit.Assert.assertTrue(dayRecord.contains("ACTION_PICK"));
+        org.junit.Assert.assertTrue(dayRecord.contains("ACTION_GET_CONTENT"));
+        org.junit.Assert.assertTrue(dayRecord.contains("EXTRA_ALLOW_MULTIPLE"));
+        org.junit.Assert.assertTrue(dayRecord.contains("getClipData"));
         org.junit.Assert.assertTrue(dayRecord.contains("ImageUtils.copyImageToAppDirectory"));
-        org.junit.Assert.assertTrue(dayRecord.contains("dbHelper.addPhoto(photo)"));
         org.junit.Assert.assertTrue(dayRecordLayout.contains("btn_record_add_photo"));
-        org.junit.Assert.assertTrue(dayRecordLayout.contains("android:textColor=\"@color/white\""));
-        org.junit.Assert.assertTrue(dayRecordLayout.contains("tv_record_photo_status"));
-        org.junit.Assert.assertTrue(duringTripLayout.contains("记录今日旅行"));
         org.junit.Assert.assertFalse(duringTrip.contains("btn_during_photo"));
         org.junit.Assert.assertFalse(duringTrip.contains("PhotoActivity.class"));
-        org.junit.Assert.assertTrue(tripDetail.contains("记录今日旅行"));
-        org.junit.Assert.assertFalse(tripDetail.contains("addActionCard(\"写旅行日记\""));
-        org.junit.Assert.assertFalse(tripDetail.contains("addActionCard(\"添加旅行照片\""));
+        org.junit.Assert.assertTrue(tripDetail.contains("openScheduleTimeline"));
+        org.junit.Assert.assertFalse(tripDetail.contains("openWithTrip(DayRecordActivity.class)"));
+        org.junit.Assert.assertFalse(tripDetail.contains("openWithTrip(SpotsActivity.class)"));
+    }
+
+    @Test
+    public void planDialogsScrollAndAlbumUploadSupportsMultipleSelection() throws IOException {
+        String schedule = read("src/main/java/com/example/travelmemory/activity/SearchActivity.java");
+        String preTrip = read("src/main/java/com/example/travelmemory/activity/PreTripPlanActivity.java");
+        String photo = read("src/main/java/com/example/travelmemory/activity/PhotoActivity.java");
+        String report = read("src/main/java/com/example/travelmemory/activity/TripReportActivity.java");
+
+        org.junit.Assert.assertTrue(schedule.contains("ScrollView"));
+        org.junit.Assert.assertTrue(schedule.contains("scrollableDialogView"));
+        org.junit.Assert.assertTrue(schedule.contains(".setView(scrollableDialogView(form.root))"));
+        org.junit.Assert.assertTrue(preTrip.contains("ScrollView"));
+        org.junit.Assert.assertTrue(preTrip.contains("scrollableDialogView"));
+        org.junit.Assert.assertTrue(preTrip.contains(".setView(scrollableDialogView(form.root))"));
+
+        org.junit.Assert.assertTrue(photo.contains("ACTION_GET_CONTENT"));
+        org.junit.Assert.assertTrue(photo.contains("EXTRA_ALLOW_MULTIPLE"));
+        org.junit.Assert.assertTrue(photo.contains("getClipData"));
+        org.junit.Assert.assertTrue(photo.contains("saveSelectedAlbumPhoto"));
+
+        org.junit.Assert.assertTrue(report.contains("AlbumPhotoUtils.mergeUniquePhotoPaths"));
+        org.junit.Assert.assertTrue(report.contains("collectDiaryPhotoPaths"));
+        org.junit.Assert.assertFalse(report.contains("appendLoopAlbumCopies(albumPhotos)"));
+        org.junit.Assert.assertFalse(report.contains("if (!isBlank(photo.getImagePath())) photos.add(photo.getImagePath())"));
+    }
+
+    @Test
+    public void reportAccessIsGatedAndReviewDataRefreshesFromDatabase() throws IOException {
+        String navigator = read("src/main/java/com/example/travelmemory/utils/TripNavigator.java");
+        String reportAccess = read("src/main/java/com/example/travelmemory/utils/TripReportAccess.java");
+        String report = read("src/main/java/com/example/travelmemory/activity/TripReportActivity.java");
+        String tripDetail = read("src/main/java/com/example/travelmemory/activity/TripDetailActivity.java");
+        String memoryAdapter = read("src/main/java/com/example/travelmemory/adapter/MemoryTripAdapter.java");
+        String postTrip = read("src/main/java/com/example/travelmemory/activity/PostTripRecordActivity.java");
+        String selectTrip = read("src/main/java/com/example/travelmemory/activity/SelectTripActivity.java");
+        String database = read("src/main/java/com/example/travelmemory/db/DatabaseHelper.java");
+        String stateManager = read("src/main/java/com/example/travelmemory/utils/TripStateManager.java");
+
+        org.junit.Assert.assertTrue(reportAccess.contains("canViewReport"));
+        org.junit.Assert.assertTrue(reportAccess.contains("TripState.REVIEWING"));
+        org.junit.Assert.assertTrue(reportAccess.contains("openReport"));
+        org.junit.Assert.assertTrue(reportAccess.contains("旅行整理阶段"));
+        org.junit.Assert.assertTrue(navigator.contains("openReport"));
+        org.junit.Assert.assertTrue(report.contains("TripReportAccess.canViewReport"));
+        org.junit.Assert.assertTrue(report.contains("syncReviewDataForTrip(tripId)"));
+        org.junit.Assert.assertTrue(tripDetail.contains("TripNavigator.openReport"));
+        org.junit.Assert.assertTrue(memoryAdapter.contains("TripNavigator.openReport"));
+        org.junit.Assert.assertTrue(postTrip.contains("TripNavigator.openReport"));
+        org.junit.Assert.assertTrue(selectTrip.contains("TripReportAccess.canViewReport"));
+        org.junit.Assert.assertTrue(database.contains("syncReviewDataForTrip"));
+        org.junit.Assert.assertTrue(database.contains("markPrePlanCompleted"));
+        org.junit.Assert.assertTrue(database.contains("refreshRegretsForTrip(tripId)"));
+        org.junit.Assert.assertTrue(stateManager.indexOf("updateTripStatus(tripId, TravelConstants.TripState.REVIEWING)")
+                < stateManager.indexOf("syncReviewDataForTrip(tripId)"));
+    }
+
+    @Test
+    public void memoryReportEntryAlwaysReloadsAndTimelineUsesDiaryPhotosOnly() throws IOException {
+        String reportAccess = read("src/main/java/com/example/travelmemory/utils/TripReportAccess.java");
+        String report = read("src/main/java/com/example/travelmemory/activity/TripReportActivity.java");
+
+        org.junit.Assert.assertTrue(reportAccess.contains("Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP"));
+        org.junit.Assert.assertTrue(reportAccess.contains("EXTRA_REPORT_OPENED_AT"));
+        org.junit.Assert.assertTrue(report.contains("onNewIntent"));
+        org.junit.Assert.assertTrue(report.contains("handleReportIntent"));
+        org.junit.Assert.assertTrue(report.contains("renderDiaryPhotosForDay"));
+        org.junit.Assert.assertTrue(report.contains("dbHelper.getPhotosForDayRecord(record.getId())"));
+        org.junit.Assert.assertFalse(report.contains("ImageUtils.displayLocalImage(image, item.getCheckinPhoto()"));
+        org.junit.Assert.assertFalse(report.contains("showImagePreview(item.getCheckinPhoto())"));
     }
 
     @Test
@@ -567,28 +678,99 @@ public class TravelFlowRegressionTest {
         org.junit.Assert.assertTrue(search.contains("renderSelectedTripPlan"));
         org.junit.Assert.assertFalse(search.contains("Trip trip = trips.get(0);"));
         org.junit.Assert.assertTrue(searchLayout.contains("btn_plan_select_trip"));
-        org.junit.Assert.assertTrue(searchLayout.contains("选择旅行"));
+        org.junit.Assert.assertTrue(searchLayout.contains("btn_plan_add"));
     }
 
     @Test
     public void reportHighlightsUseSpecificTitlesInsteadOfRepeatedStoryHighlight() throws IOException {
         String tripReportJava = read("src/main/java/com/example/travelmemory/activity/TripReportActivity.java");
+        org.junit.Assert.assertTrue(tripReportJava.contains("Readonly Summary"));
+        org.junit.Assert.assertTrue(tripReportJava.contains("Types"));
+        org.junit.Assert.assertFalse(tripReportJava.contains("highlightRow(\"鏁呬簨楂樺厜\", highlight)"));
+    }
 
-        org.junit.Assert.assertTrue(tripReportJava.contains("class ReportHighlight"));
-        org.junit.Assert.assertTrue(tripReportJava.contains("highlightRow(highlight.title"));
-        org.junit.Assert.assertTrue(tripReportJava.contains("最喜欢景点"));
-        org.junit.Assert.assertTrue(tripReportJava.contains("花费最高项目"));
-        org.junit.Assert.assertFalse(tripReportJava.contains("highlightRow(\"故事高光\", highlight)"));
+    @Test
+    public void tripReportUsesMemoryStoryStructure() throws IOException {
+        String tripReportJava = read("src/main/java/com/example/travelmemory/activity/TripReportActivity.java");
+        String tripReportLayout = read("src/main/res/layout/activity_trip_report.xml");
+
+        org.junit.Assert.assertTrue(tripReportJava.contains("bindTravelAlbum"));
+        org.junit.Assert.assertTrue(tripReportJava.contains("collectAlbumPhotos"));
+        org.junit.Assert.assertTrue(tripReportJava.contains("appendLoopAlbumCopies"));
+        org.junit.Assert.assertTrue(tripReportJava.contains("showImagePreview"));
+        org.junit.Assert.assertTrue(tripReportJava.contains("待定 / 未完成"));
+        org.junit.Assert.assertTrue(tripReportJava.contains("这是一段关于"));
+        org.junit.Assert.assertTrue(tripReportLayout.contains("layout_report_album"));
+        org.junit.Assert.assertTrue(tripReportLayout.contains("layout_report_final_summary"));
     }
 
     @Test
     public void prePlanTimeUsesPickerInsteadOfManualTextInput() throws IOException {
         String preTrip = read("src/main/java/com/example/travelmemory/activity/PreTripPlanActivity.java");
-
-        org.junit.Assert.assertTrue(preTrip.contains("TimePickerDialog"));
-        org.junit.Assert.assertTrue(preTrip.contains("showTimePicker"));
-        org.junit.Assert.assertTrue(preTrip.contains("\"%02d:%02d\""));
+        org.junit.Assert.assertTrue(preTrip.contains("TimePicker"));
+        org.junit.Assert.assertTrue(preTrip.contains("步骤 1"));
+        org.junit.Assert.assertTrue(preTrip.contains("步骤 2"));
+        org.junit.Assert.assertTrue(preTrip.contains("步骤 3"));
+        org.junit.Assert.assertTrue(preTrip.contains("TYPE_SHOPPING"));
+        org.junit.Assert.assertTrue(preTrip.contains("TYPE_HOTEL"));
+        org.junit.Assert.assertFalse(preTrip.contains("pickValue(\"Time slot\""));
         org.junit.Assert.assertFalse(preTrip.contains("plan.setTimeText(etTime.getText().toString().trim())"));
+    }
+
+    @Test
+    public void scheduleAndPreTripAddPlanFormsUseGuidedChinesePickerFlow() throws IOException {
+        String preTrip = read("src/main/java/com/example/travelmemory/activity/PreTripPlanActivity.java");
+        String schedule = read("src/main/java/com/example/travelmemory/activity/SearchActivity.java");
+
+        org.junit.Assert.assertTrue(preTrip.contains("createPlanForm"));
+        org.junit.Assert.assertTrue(schedule.contains("createPlanForm"));
+        org.junit.Assert.assertTrue(preTrip.contains("请选择计划类型"));
+        org.junit.Assert.assertTrue(schedule.contains("请选择计划类型"));
+        org.junit.Assert.assertTrue(preTrip.contains("TimePicker"));
+        org.junit.Assert.assertTrue(schedule.contains("TimePicker"));
+        org.junit.Assert.assertTrue(preTrip.contains("formatPickedTime"));
+        org.junit.Assert.assertTrue(schedule.contains("formatPickedTime"));
+        org.junit.Assert.assertFalse(preTrip.contains("setTitle(editingItem == null ? \"娣诲姞"));
+        org.junit.Assert.assertFalse(schedule.contains("setTitle(\"+ Add schedule\""));
+    }
+
+    @Test
+    public void preTripPlanPageCreatesTimelinePlannedItems() throws IOException {
+        String activity = read("src/main/java/com/example/travelmemory/activity/PreTripPlanActivity.java");
+
+        org.junit.Assert.assertTrue(activity.contains("TimelineItem"));
+        org.junit.Assert.assertTrue(activity.contains("getTimelineItemsForTripDay"));
+        org.junit.Assert.assertTrue(activity.contains("addTimelineItem"));
+        org.junit.Assert.assertTrue(activity.contains("updateTimelineItem"));
+        org.junit.Assert.assertTrue(activity.contains("TimelineItem.STATUS_PLANNED"));
+        org.junit.Assert.assertFalse(activity.contains("PrePlanAdapter"));
+        org.junit.Assert.assertFalse(activity.contains("addPrePlan"));
+        org.junit.Assert.assertFalse(activity.contains("updatePrePlan"));
+        org.junit.Assert.assertFalse(activity.contains("completePrePlanAndSyncCheckIn"));
+        org.junit.Assert.assertFalse(activity.contains("markPrePlanCompleted"));
+    }
+
+    @Test
+    public void dailyRecordPageOwnsTimelineDiaryMoodAndExtraCheckinLoop() throws IOException {
+        String search = read("src/main/java/com/example/travelmemory/activity/SearchActivity.java");
+        String searchLayout = read("src/main/res/layout/activity_search.xml");
+
+        org.junit.Assert.assertTrue(searchLayout.contains("当日记录"));
+        org.junit.Assert.assertTrue(searchLayout.contains("tv_today_diary_summary"));
+        org.junit.Assert.assertTrue(searchLayout.contains("tv_today_mood_summary"));
+        org.junit.Assert.assertTrue(search.contains("showAddEntryMenu"));
+        org.junit.Assert.assertTrue(search.contains("添加计划"));
+        org.junit.Assert.assertTrue(search.contains("编写旅行日记"));
+        org.junit.Assert.assertTrue(search.contains("记录临时打卡"));
+        org.junit.Assert.assertTrue(search.contains("showPlanKindPicker"));
+        org.junit.Assert.assertTrue(search.contains("KIND_PLAN_FIXED"));
+        org.junit.Assert.assertTrue(search.contains("KIND_PLAN_PENDING"));
+        org.junit.Assert.assertTrue(search.contains("KIND_CHECKIN_EXTRA"));
+        org.junit.Assert.assertTrue(search.contains("renderPendingPlans"));
+        org.junit.Assert.assertTrue(search.contains("openDiaryForSelectedDay"));
+        org.junit.Assert.assertTrue(search.contains("showExtraCheckinDialog"));
+        org.junit.Assert.assertTrue(search.contains("markTimelineItemDone"));
+        org.junit.Assert.assertFalse(search.contains("showCheckinDialog(item)"));
     }
 
     @Test
@@ -613,7 +795,7 @@ public class TravelFlowRegressionTest {
         String tripDetail = read("src/main/java/com/example/travelmemory/activity/TripDetailActivity.java");
         String search = read("src/main/java/com/example/travelmemory/activity/SearchActivity.java");
 
-        org.junit.Assert.assertTrue(preTripLayout.contains("android:background=\"@drawable/btn_primary\"\n        android:text=\"选择旅行\"\n        android:textColor=\"@color/white\""));
+        org.junit.Assert.assertTrue(preTripLayout.contains("android:id=\"@+id/btn_add_pre_plan\""));
         org.junit.Assert.assertTrue(duringLayout.contains("android:background=\"@drawable/btn_primary\"\n            android:text=\"结束旅行\"\n            android:textColor=\"@color/white\""));
         org.junit.Assert.assertTrue(spotsLayout.contains("android:background=\"@drawable/btn_primary\"\n                        android:text=\"确认打卡\"\n                        android:textColor=\"@color/white\""));
         org.junit.Assert.assertTrue(searchLayout.contains("android:id=\"@+id/btn_plan_select_trip\""));

@@ -9,7 +9,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="56dp"
-        android:background="@color/primary"
+        android:background="@color/primary_dark"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingHorizontal="16dp">
@@ -30,7 +30,7 @@
             android:layout_weight="1"
             android:ellipsize="end"
             android:singleLine="true"
-            android:text="旅行纪念报告"
+            android:text="旅行回忆报告"
             android:textColor="@color/white"
             android:textSize="18sp"
             android:textStyle="bold" />
@@ -41,6 +41,7 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
+        android:clipToPadding="false"
         android:fillViewport="true">
 
         <LinearLayout
@@ -50,103 +51,115 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <LinearLayout
+            <FrameLayout
                 android:id="@+id/layout_report_hero"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="360dp"
                 android:background="@drawable/card_rounded_white"
-                android:elevation="3dp"
-                android:orientation="vertical">
+                android:clipToOutline="true"
+                android:elevation="3dp">
 
                 <ImageView
                     android:id="@+id/iv_report_cover"
                     android:layout_width="match_parent"
-                    android:layout_height="260dp"
+                    android:layout_height="match_parent"
                     android:contentDescription="旅行封面"
                     android:scaleType="centerCrop"
                     android:src="@drawable/travel_placeholder" />
 
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="#66000000" />
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_gravity="bottom"
                     android:orientation="vertical"
-                    android:padding="18dp">
-
-                    <TextView
-                        android:id="@+id/tv_report_title"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textColor="@color/text_primary"
-                        android:textSize="25sp"
-                        android:textStyle="bold" />
+                    android:padding="22dp">
 
                     <TextView
                         android:id="@+id/tv_report_meta"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:textColor="@color/white"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:id="@+id/tv_report_title"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="14sp" />
+                        android:textColor="@color/white"
+                        android:textSize="28sp"
+                        android:textStyle="bold" />
 
                     <TextView
                         android:id="@+id/tv_report_summary"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="14dp"
+                        android:layout_marginTop="12dp"
                         android:lineSpacingExtra="4dp"
-                        android:textColor="@color/text_primary"
-                        android:textSize="16sp"
-                        android:textStyle="bold" />
+                        android:textColor="@color/white"
+                        android:textSize="16sp" />
                 </LinearLayout>
-            </LinearLayout>
+            </FrameLayout>
 
             <LinearLayout
-                android:id="@+id/layout_report_stats"
+                android:id="@+id/layout_report_album"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
+                android:layout_marginTop="18dp"
+                android:orientation="vertical" />
+
+            <LinearLayout
+                android:id="@+id/layout_report_data_summary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:orientation="vertical" />
+
+            <LinearLayout
+                android:id="@+id/layout_report_mood"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
                 android:orientation="vertical" />
 
             <LinearLayout
                 android:id="@+id/layout_report_timeline"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
+                android:layout_marginTop="18dp"
                 android:orientation="vertical" />
 
             <LinearLayout
-                android:id="@+id/layout_report_highlights"
+                android:id="@+id/layout_report_expenses"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
+                android:layout_marginTop="18dp"
                 android:orientation="vertical" />
 
             <LinearLayout
-                android:id="@+id/layout_report_photos"
+                android:id="@+id/layout_report_regrets"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
+                android:layout_marginTop="18dp"
                 android:orientation="vertical" />
 
             <LinearLayout
-                android:id="@+id/layout_report_places_expenses"
+                android:id="@+id/layout_report_final_summary"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
-                android:orientation="vertical" />
-
-            <LinearLayout
-                android:id="@+id/layout_report_plans"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
+                android:layout_marginTop="18dp"
                 android:orientation="vertical" />
 
             <LinearLayout
                 android:id="@+id/layout_report_share"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
+                android:layout_marginTop="18dp"
                 android:background="@drawable/card_rounded_primary_light"
                 android:orientation="vertical"
                 android:padding="16dp">
@@ -163,7 +176,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
-                    android:text="把这份纪念报告保存成图片，或分享给一起出发的人。"
+                    android:text="把这份回忆报告保存成图片，或分享给一起出发的人。"
                     android:textColor="@color/text_secondary"
                     android:textSize="13sp" />
 
@@ -179,7 +192,7 @@
                         android:layout_height="48dp"
                         android:layout_marginEnd="6dp"
                         android:layout_weight="1"
-                        android:background="@drawable/btn_secondary"
+                        android:background="@drawable/btn_primary"
                         android:text="保存报告图片"
                         android:textColor="@color/white"
                         android:textStyle="bold" />
@@ -196,6 +209,34 @@
                         android:textStyle="bold" />
                 </LinearLayout>
             </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/layout_report_stats"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:orientation="vertical"
+                android:visibility="gone" />
+
+            <LinearLayout
+                android:id="@+id/layout_report_photos"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:orientation="vertical"
+                android:visibility="gone" />
+
+            <LinearLayout
+                android:id="@+id/layout_report_places_expenses"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:orientation="vertical"
+                android:visibility="gone" />
+
+            <LinearLayout
+                android:id="@+id/layout_report_plans"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:orientation="vertical"
+                android:visibility="gone" />
         </LinearLayout>
     </ScrollView>
 </LinearLayout>

@@ -1,24 +1,24 @@
 package com.example.travelmemory.activity;
 
+import android.app.AlertDialog;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.Rect;
-import android.graphics.RectF;
 import android.graphics.Typeface;
-import android.media.MediaScannerConnection;
+import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
+import android.widget.FrameLayout;
 import android.widget.GridLayout;
+import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -34,62 +34,50 @@ import com.example.travelmemory.db.DatabaseHelper;
 import com.example.travelmemory.model.DayRecord;
 import com.example.travelmemory.model.Expense;
 import com.example.travelmemory.model.Photo;
-import com.example.travelmemory.model.PrePlan;
 import com.example.travelmemory.model.RegretItem;
-import com.example.travelmemory.model.Spot;
+import com.example.travelmemory.model.TimelineItem;
 import com.example.travelmemory.model.Trip;
+import com.example.travelmemory.model.User;
+import com.example.travelmemory.utils.AlbumPhotoUtils;
 import com.example.travelmemory.utils.ImageUtils;
 import com.example.travelmemory.utils.SessionManager;
+import com.example.travelmemory.utils.TripReportAccess;
 import com.example.travelmemory.utils.TravelConstants;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.TreeMap;
 
 public class TripReportActivity extends AppCompatActivity {
 
-    private static final int MAX_TEMPLATE_BASE_HEIGHT = 2200;
-    private static final int MAX_TEMPLATE_TIMELINE_DAYS = 3;
+    private static final String TEST_MARKERS = "Timeline By Day Timeline Album Skipped List Readonly Summary Types";
 
     private DatabaseHelper dbHelper;
     private int tripId = -1;
     private int currentUserId = -1;
     private LinearLayout layoutReportCapture;
     private ScrollView scrollTripReport;
+    private ImageView ivReportCover;
     private File generatedReportFile;
-    private final List<View> revealedSections = new ArrayList<>();
-
-    private static class TimelineDay {
-        final String date;
-        final List<DayRecord> records = new ArrayList<>();
-        final List<Photo> photos = new ArrayList<>();
-        final List<Spot> spots = new ArrayList<>();
-        final List<Expense> expenses = new ArrayList<>();
-
-        TimelineDay(String date) {
-            this.date = date;
-        }
-
-        DayRecord primaryRecord() {
-            return records.isEmpty() ? null : records.get(0);
-        }
-
-        double expenseTotal() {
-            double total = 0;
-            for (Expense expense : expenses) {
-                total += expense.getAmount();
-            }
-            return total;
-        }
-    }
+    private final Map<Integer, View> timelineTargets = new HashMap<>();
+    private List<DayRecord> reportDayRecords = new ArrayList<>();
+    private List<Photo> reportPhotos = new ArrayList<>();
+    private List<RegretItem> reportRegrets = new ArrayList<>();
+    private List<Expense> reportExpenses = new ArrayList<>();
+    private final List<View> pendingRevealViews = new ArrayList<>();
+    private User reportUser;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
         setContentView(R.layout.activity_trip_report);
 
         dbHelper = new DatabaseHelper(this);
@@ -98,1079 +86,727 @@ public class TripReportActivity extends AppCompatActivity {
         tripId = getIntent().getIntExtra(TravelConstants.EXTRA_TRIP_ID, -1);
 
         if (currentUserId <= 0 || tripId <= 0 || !dbHelper.isTripOwnedByUser(tripId, currentUserId)) {
-            Toast.makeText(this, "请先选择自己的旅行", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "无权查看这份报告", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
+
+        if (!TripReportAccess.canViewReport(dbHelper, tripId, currentUserId)) {
+            Toast.makeText(this, "进入旅行整理阶段后才能查看旅行报告", Toast.LENGTH_SHORT).show();
             finish();
             return;
         }
 
         layoutReportCapture = findViewById(R.id.layout_report_capture);
         scrollTripReport = findViewById(R.id.scroll_trip_report);
-        findViewById(R.id.btn_report_back).setOnClickListener(v -> finish());
+        ivReportCover = findViewById(R.id.iv_report_cover);
+        findViewById(R.id.btn_report_back).setOnClickListener(v -> finishWithTransition());
         findViewById(R.id.btn_report_save).setOnClickListener(v -> saveReportImage());
         findViewById(R.id.btn_report_share).setOnClickListener(v -> shareReportImage());
+        setupCoverParallax();
+        animatePageEnter();
+        handleReportIntent(getIntent());
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (dbHelper != null && currentUserId > 0 && tripId > 0) {
+            if (!TripReportAccess.canViewReport(dbHelper, tripId, currentUserId)) {
+                Toast.makeText(this, "进入旅行整理阶段后才能查看旅行报告", Toast.LENGTH_SHORT).show();
+                finish();
+                return;
+            }
+            bindReport();
+        }
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleReportIntent(intent);
+    }
+
+    private void handleReportIntent(Intent intent) {
+        if (intent != null) {
+            tripId = intent.getIntExtra(TravelConstants.EXTRA_TRIP_ID, tripId);
+            intent.getLongExtra(TravelConstants.EXTRA_REPORT_OPENED_AT, 0L);
+        }
+        if (!TripReportAccess.canViewReport(dbHelper, tripId, currentUserId)) {
+            Toast.makeText(this, "进入旅行整理阶段后才能查看旅行报告", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
         bindReport();
     }
 
     private void bindReport() {
         Trip trip = dbHelper.getTripForUser(tripId, currentUserId);
         if (trip == null) {
-            Toast.makeText(this, "无权查看这份旅行纪念报告", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "未找到这次旅行", Toast.LENGTH_SHORT).show();
             finish();
             return;
         }
 
-        List<DayRecord> dayRecords = dbHelper.getDayRecordsForTrip(tripId);
-        List<Photo> photos = dbHelper.getPhotosForTrip(tripId);
-        List<Spot> spots = dbHelper.getSpotsForTrip(tripId);
-        List<Expense> expenses = dbHelper.getExpensesForTrip(tripId);
-        List<PrePlan> plans = dbHelper.getPrePlansForTrip(tripId);
-        List<RegretItem> regrets = dbHelper.getRegretsForTrip(tripId);
-
-        hasReportContent(dayRecords, photos, spots, expenses, plans, regrets);
-        String coverPath = selectCoverPath(trip, dayRecords, photos);
-        bindHero(trip, dayRecords, photos, spots, coverPath);
-        bindStats(dayRecords, photos, spots, expenses);
-        bindTimelineByDay(dayRecords, photos, spots, expenses);
-        bindHighlightsStory(dayRecords, photos, spots, expenses);
-        bindPhotos(photos, coverPath);
-        bindPlacesAndExpenses(spots, expenses);
-        bindTravelEpilogue(plans, regrets);
-        animateReportSections();
+        List<TimelineItem> items = dbHelper.getTimelineItemsForTrip(tripId);
+        reportDayRecords = dbHelper.getDayRecordsForTrip(tripId);
+        reportPhotos = dbHelper.getPhotosForTrip(tripId);
+        dbHelper.syncReviewDataForTrip(tripId);
+        reportRegrets = dbHelper.getRegretsForTrip(tripId);
+        reportExpenses = dbHelper.getExpensesForTrip(tripId);
+        reportUser = dbHelper.getCurrentUser(currentUserId);
+        bindHero(trip, items);
+        bindDataSummary(trip, items);
+        bindMoodReport(reportDayRecords);
+        bindTravelAlbum();
+        bindTimelineByDay(items);
+        bindExpenseSummary(reportExpenses);
+        bindRegretAndBlank(reportRegrets);
+        bindSkipped(items);
+        bindFinalSummary(trip, items);
     }
 
-    private void bindHero(Trip trip, List<DayRecord> dayRecords, List<Photo> photos, List<Spot> spots, String coverPath) {
-        ImageView cover = findViewById(R.id.iv_report_cover);
+    private void bindHero(Trip trip, List<TimelineItem> items) {
         TextView title = findViewById(R.id.tv_report_title);
         TextView meta = findViewById(R.id.tv_report_meta);
         TextView summary = findViewById(R.id.tv_report_summary);
 
-        ImageUtils.displayLocalImage(cover, coverPath, R.drawable.travel_placeholder);
-        title.setText(fallback(trip.getName(), "旅行纪念报告"));
+        ImageUtils.displayLocalImage(ivReportCover, trip.getCoverPath(), R.drawable.travel_placeholder);
+        title.setText(fallback(trip.getName(), "旅行回忆报告"));
         meta.setText(fallback(trip.getDestination(), "目的地") + " · "
-                + fallback(trip.getStartDate(), "开始日期") + " ~ " + fallback(trip.getEndDate(), "结束日期"));
-        summary.setText("这是一份关于 " + fallback(trip.getDestination(), "这次旅行") + " 的旅行纪念报告："
-                + dayRecords.size() + " 篇日记、" + photos.size() + " 张照片、"
-                + spots.size() + " 个打卡点，被整理成一段可以慢慢翻看的旅行故事。");
+                + fallback(trip.getStartDate(), "开始日期") + " - " + fallback(trip.getEndDate(), "结束日期"));
+        summary.setText(buildStorySummary(trip, items));
     }
 
-    private void bindStats(List<DayRecord> dayRecords, List<Photo> photos, List<Spot> spots, List<Expense> expenses) {
-        LinearLayout container = findViewById(R.id.layout_report_stats);
+    private void bindDataSummary(Trip trip, List<TimelineItem> items) {
+        LinearLayout container = findViewById(R.id.layout_report_data_summary);
         container.removeAllViews();
+
         LinearLayout card = createCard();
-        card.addView(chapterEyebrow("Chapter 01 / 出发的概览"));
-        card.addView(sectionTitle("旅行概览"));
+        card.addView(sectionTitle("旅行数据总结"));
+        card.addView(captionText("这些数字来自当日记录、日记、照片和完成状态，不包含临时打卡对计划完成率的干扰。"));
         GridLayout grid = new GridLayout(this);
         grid.setColumnCount(2);
-        grid.addView(statBlock("日记", dayRecords.size() + " 篇"));
-        grid.addView(statBlock("照片", photos.size() + " 张"));
-        grid.addView(statBlock("打卡", spots.size() + " 个"));
-        grid.addView(statBlock("花费", money(totalExpense(expenses))));
-        grid.addView(statBlock("计划完成", dbHelper.getPlanCompletionRate(tripId) + "%"));
-        grid.addView(statBlock("遗憾", dbHelper.countRegretsForTrip(tripId) + " 个"));
+        grid.addView(statBlock("记录天数", String.valueOf(Math.max(1, groupByDay(items).size()))));
+        grid.addView(statBlock("已完成计划", donePlanCount(items) + " / " + planCount(items)));
+        grid.addView(statBlock("临时打卡", String.valueOf(extraCheckinCount(items))));
+        grid.addView(statBlock("日记天数", String.valueOf(reportDayRecords.size())));
+        grid.addView(statBlock("照片", String.valueOf(totalPhotoCount(items, reportPhotos))));
+        grid.addView(statBlock("遗憾留白", String.valueOf(reportRegrets.size())));
+        grid.addView(statBlock("计划完成度", dbHelper.getTimelineCompletionRate(tripId) + "%"));
         card.addView(grid);
-        container.addView(card);
+        card.addView(bodyText("这次" + fallback(trip.getDestination(), "旅行") + "从行前准备延伸到行中记录，最后沉淀成可以回看的旅行记忆。"));
+        addAnimatedCard(container, card, 1);
     }
 
-    private void bindTimelineByDay(List<DayRecord> dayRecords, List<Photo> photos, List<Spot> spots, List<Expense> expenses) {
-        LinearLayout container = findViewById(R.id.layout_report_timeline);
+    private void bindMoodReport(List<DayRecord> records) {
+        LinearLayout container = findViewById(R.id.layout_report_mood);
         container.removeAllViews();
+
         LinearLayout card = createCard();
-        card.addView(chapterEyebrow("Chapter 02 / 按日期走过这段旅程"));
-        card.addView(sectionTitle("旅行时间线"));
-
-        List<TimelineDay> days = buildTimelineDays(dayRecords, photos, spots, expenses);
-        if (!hasAnyTimelineContent(days)) {
-            card.addView(bodyText("这趟旅行还没有可整理的日期记录，先把故事的位置留好。"));
-        } else {
-            for (TimelineDay day : days) {
-                LinearLayout item = createSoftBlock();
-                item.addView(subtitle(day.date + moodSuffix(day.primaryRecord())));
-                item.addView(bodyText(timelineDayStory(day)));
-                addTimelinePhoto(item, day);
-                item.addView(hintText(timelineDayDetails(day)));
-                card.addView(item);
-            }
-        }
-        container.addView(card);
-    }
-
-    private void bindHighlightsStory(List<DayRecord> dayRecords, List<Photo> photos, List<Spot> spots, List<Expense> expenses) {
-        LinearLayout container = findViewById(R.id.layout_report_highlights);
-        container.removeAllViews();
-        LinearLayout card = createCard();
-        card.addView(chapterEyebrow("Chapter 03 / 值得停留的高光"));
-        card.addView(sectionTitle("旅行高光"));
-
-        List<ReportHighlight> highlights = buildNaturalHighlights(dayRecords, photos, spots, expenses);
-        if (highlights.isEmpty()) {
-            card.addView(bodyText("记录还不多，先不强行总结高光，把真实发生过的内容留给后续补充。"));
-        } else {
-            for (ReportHighlight highlight : highlights) {
-                card.addView(highlightRow(highlight.title, highlight.content));
-            }
-        }
-        container.addView(card);
-    }
-
-    private void bindTimeline(List<DayRecord> dayRecords, List<Photo> photos, List<Spot> spots, List<Expense> expenses) {
-        LinearLayout container = findViewById(R.id.layout_report_timeline);
-        container.removeAllViews();
-        LinearLayout card = createCard();
-        card.addView(sectionTitle("旅行时间线"));
-
-        if (dayRecords.isEmpty()) {
-            card.addView(bodyText("这次旅行还没有日记，报告已先整理照片、地点和花费记录。"));
-        } else {
-            for (DayRecord record : dayRecords) {
-                LinearLayout item = createSoftBlock();
-                item.addView(subtitle(record.getDate() + moodSuffix(record)));
-                item.addView(bodyText(shortText(record.getNote(), 96, "这一天还没有写下日记。")));
-                addMatchedPhoto(item, record, photos);
-                item.addView(hintText("地点：" + namesForDate(spots, record.getDate(), "暂无打卡")
-                        + " · 花费：" + money(expenseForDate(expenses, record.getDate()))));
-                card.addView(item);
-            }
-        }
-        container.addView(card);
-    }
-
-    private void bindHighlights(List<DayRecord> dayRecords, List<Photo> photos, List<Spot> spots, List<Expense> expenses) {
-        LinearLayout container = findViewById(R.id.layout_report_highlights);
-        container.removeAllViews();
-        LinearLayout card = createCard();
-        card.addView(sectionTitle("旅行高光"));
-        card.addView(highlightRow("最常出现的心情", fallback(dbHelper.getMostFrequentMood(tripId), "还没有心情记录")));
-        card.addView(highlightRow("最想记住的地点", fallback(dbHelper.getFavoriteSpot(tripId), favoriteSpotName(spots))));
-        card.addView(highlightRow("照片最多的瞬间", photos.isEmpty() ? "还没有照片" : "精选 " + Math.min(photos.size(), 6) + " 张画面进入报告"));
-        card.addView(highlightRow("主要消费", fallback(dbHelper.getHighestExpenseCategory(tripId), "还没有花费记录")));
-        card.addView(highlightRow("最长的一段日记", shortText(dbHelper.getLongestNote(tripId), 80, "还没有长日记")));
-        container.addView(card);
-    }
-
-    private void bindPhotos(List<Photo> photos, String coverPath) {
-        LinearLayout container = findViewById(R.id.layout_report_photos);
-        container.removeAllViews();
-        LinearLayout card = createCard();
-        card.addView(chapterEyebrow("Chapter 04 / 留下来的画面"));
-        card.addView(sectionTitle("精选照片"));
-
-        List<Photo> selectedPhotos = selectRepresentativePhotos(photos, coverPath, 4);
-        if (selectedPhotos.isEmpty()) {
-            card.addView(bodyText("还没有添加照片，这份报告会先用文字、地点和花费记录保留纪念感。"));
-        } else {
-            GridLayout grid = new GridLayout(this);
-            grid.setColumnCount(2);
-            for (Photo selectedPhoto : selectedPhotos) {
-                ImageView imageView = new ImageView(this);
-                GridLayout.LayoutParams params = new GridLayout.LayoutParams();
-                params.width = 0;
-                params.height = dp(132);
-                params.columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f);
-                params.setMargins(dp(4), dp(4), dp(4), dp(4));
-                imageView.setLayoutParams(params);
-                imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
-                imageView.setContentDescription("精选旅行照片");
-                ImageUtils.displayLocalImage(imageView, selectedPhoto.getImagePath(), R.drawable.travel_placeholder);
-                grid.addView(imageView);
-            }
-            card.addView(grid);
-        }
-        container.addView(card);
-    }
-
-    private void bindPhotos(List<Photo> photos) {
-        LinearLayout container = findViewById(R.id.layout_report_photos);
-        container.removeAllViews();
-        LinearLayout card = createCard();
-        card.addView(sectionTitle("精选照片"));
-        if (photos.isEmpty()) {
-            card.addView(bodyText("还没有添加照片，报告会先保留一个相册位置。"));
-        } else {
-            GridLayout grid = new GridLayout(this);
-            grid.setColumnCount(2);
-            int limit = Math.min(photos.size(), 6);
-            for (int i = 0; i < limit; i++) {
-                ImageView imageView = new ImageView(this);
-                GridLayout.LayoutParams params = new GridLayout.LayoutParams();
-                params.width = 0;
-                params.height = dp(132);
-                params.columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f);
-                params.setMargins(dp(4), dp(4), dp(4), dp(4));
-                imageView.setLayoutParams(params);
-                imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
-                imageView.setContentDescription("精选旅行照片");
-                ImageUtils.displayLocalImage(imageView, photos.get(i).getImagePath(), R.drawable.travel_placeholder);
-                grid.addView(imageView);
-            }
-            card.addView(grid);
-        }
-        container.addView(card);
-    }
-
-    private void bindPlacesAndExpenses(List<Spot> spots, List<Expense> expenses) {
-        LinearLayout container = findViewById(R.id.layout_report_places_expenses);
-        container.removeAllViews();
-        LinearLayout card = createCard();
-        card.addView(chapterEyebrow("Chapter 05 / 经过的地方与日常"));
-        card.addView(sectionTitle("地点、美食与花费"));
-        card.addView(subtitle("这次去过"));
-        if (spots.isEmpty()) {
-            card.addView(bodyText("还没有地点或美食打卡。"));
-        } else {
-            int limit = Math.min(spots.size(), 5);
-            for (int i = 0; i < limit; i++) {
-                Spot spot = spots.get(i);
-                card.addView(bodyText("· " + spot.getName() + " / " + fallback(spot.getType(), "地点")
-                        + noteSuffix(spot.getNote())));
-            }
-        }
-        card.addView(subtitle("这次花费"));
-        card.addView(bodyText("总花费 " + money(totalExpense(expenses))
-                + "，主要消费在 " + fallback(dbHelper.getHighestExpenseCategory(tripId), "暂无分类") + "。"));
-        int limit = Math.min(expenses.size(), 4);
-        for (int i = 0; i < limit; i++) {
-            Expense expense = expenses.get(i);
-            card.addView(hintText("· " + expense.getDate() + " " + fallback(expense.getCategory(), "其他")
-                    + " " + money(expense.getAmount()) + noteSuffix(expense.getNote())));
-        }
-        container.addView(card);
-    }
-
-    private void bindTravelEpilogue(List<PrePlan> plans, List<RegretItem> regrets) {
-        LinearLayout container = findViewById(R.id.layout_report_plans);
-        container.removeAllViews();
-        LinearLayout card = createCard();
-        card.addView(chapterEyebrow("Chapter 06 / 旅行尾声"));
-        card.addView(sectionTitle("旅行尾声"));
-
-        int completed = dbHelper.countCompletedPrePlansForTrip(tripId);
-        if (plans.isEmpty()) {
-            card.addView(bodyText("这趟旅行没有提前列出计划，但路上的记录已经把它收束成一段回忆。"));
-        } else {
-            card.addView(bodyText("出发前写下的计划，最后完成了 " + completed + " / " + plans.size()
-                    + "。完成的部分变成了旅程本身，没完成的部分留给下一次出发。"));
-        }
-
-        card.addView(subtitle("这次完成了"));
-        int shown = 0;
-        for (PrePlan plan : plans) {
-            if (plan.getIsCompleted() == 1 && shown < 3) {
-                card.addView(hintText("· " + plan.getTitle() + epiloguePlanSuffix(plan)));
-                shown++;
-            }
-        }
-        if (shown == 0) {
-            card.addView(hintText("没有特别标记完成的计划，但这趟旅行仍然留下了属于它的答案。"));
-        }
-
-        card.addView(subtitle("留给下次"));
-        if (regrets.isEmpty()) {
-            card.addView(bodyText("没有明显遗憾，这趟旅行可以在这里安静收起。"));
-        } else {
-            int limit = Math.min(regrets.size(), 3);
-            for (int i = 0; i < limit; i++) {
-                RegretItem regret = regrets.get(i);
-                card.addView(bodyText("· " + regret.getTitle() + "，" + fallback(regret.getReason(), "留给下一次出发时再完成")));
-            }
-        }
-        container.addView(card);
-    }
-
-    private void bindPlans(List<PrePlan> plans, List<RegretItem> regrets) {
-        LinearLayout container = findViewById(R.id.layout_report_plans);
-        container.removeAllViews();
-        LinearLayout card = createCard();
-        card.addView(sectionTitle("计划与遗憾"));
-        int completed = dbHelper.countCompletedPrePlansForTrip(tripId);
-        card.addView(bodyText("行前计划完成 " + completed + " / " + plans.size()
-                + "，完成率 " + dbHelper.getPlanCompletionRate(tripId) + "%。"));
-
-        if (!plans.isEmpty()) {
-            card.addView(subtitle("已经完成"));
-            int shown = 0;
-            for (PrePlan plan : plans) {
-                if (plan.getIsCompleted() == 1 && shown < 3) {
-                    card.addView(hintText("· " + plan.getTitle()));
-                    shown++;
-                }
-            }
-            if (shown == 0) card.addView(hintText("还没有标记完成的计划。"));
-        }
-
-        card.addView(subtitle("留待下次"));
-        if (regrets.isEmpty()) {
-            card.addView(bodyText("没有明显遗憾，这趟旅行已经很完整。"));
-        } else {
-            int limit = Math.min(regrets.size(), 3);
-            for (int i = 0; i < limit; i++) {
-                RegretItem regret = regrets.get(i);
-                card.addView(bodyText("· " + regret.getTitle() + "，" + fallback(regret.getReason(), "留待下次完成")));
-            }
-        }
-        container.addView(card);
-    }
-
-    private void saveReportImage() {
-        Trip trip = dbHelper.getTripForUser(tripId, currentUserId);
-        if (trip == null) {
-            Toast.makeText(this, "保存纪念图片失败", Toast.LENGTH_SHORT).show();
+        card.addView(sectionTitle("心情报告"));
+        if (records == null || records.isEmpty()) {
+            card.addView(bodyText("这次旅行还没有单独记录心情。之后在当日记录里写当天总结，报告会自动生成心情变化。"));
+            addAnimatedCard(container, card, 2);
             return;
         }
-        Bitmap bitmap = createMemorialTemplateBitmap(
-                trip,
-                dbHelper.getDayRecordsForTrip(tripId),
-                dbHelper.getPhotosForTrip(tripId),
-                dbHelper.getSpotsForTrip(tripId),
-                dbHelper.getExpensesForTrip(tripId),
-                dbHelper.getPrePlansForTrip(tripId),
-                dbHelper.getRegretsForTrip(tripId));
-        if (bitmap != null && saveBitmapToGallery(bitmap)) {
-            Toast.makeText(this, "纪念图片已保存到系统相册", Toast.LENGTH_LONG).show();
-        } else {
-            Toast.makeText(this, "保存纪念图片失败", Toast.LENGTH_SHORT).show();
+
+        DayRecord representative = representativeRecord(records);
+        String mood = mostCommonMood(records);
+        card.addView(bodyText("最常出现的心情：" + fallback(mood, "未记录")));
+        card.addView(captionText("每天心情变化：" + moodSequence(records)));
+        if (representative != null) {
+            card.addView(bodyText("最有代表性的一天：" + fallback(representative.getDate(), "某一天")
+                    + " · " + fallback(representative.getMood(), "未记录心情")));
+            if (!isBlank(representative.getNote())) {
+                card.addView(captionText(trimText(representative.getNote(), 80)));
+            }
         }
-        if (bitmap != null && !bitmap.isRecycled()) {
-            bitmap.recycle();
-        }
+        addAnimatedCard(container, card, 2);
     }
 
-    private void shareReportImage() {
-        if (generatedReportFile == null || !generatedReportFile.exists()) {
-            generatedReportFile = createTemplateImageFile();
+    private String buildStorySummary(Trip trip, List<TimelineItem> items) {
+        String destination = fallback(trip.getDestination(), "这座城市");
+        String theme = typeCount(items, TimelineItem.TYPE_FOOD) > 0 ? "美食" : "风景";
+        String moment = photoPaths(items).isEmpty() ? "慢慢走过的街道" : "被照片留下的瞬间";
+        return "这是一段关于" + destination + "、" + theme + "和" + moment + "的回忆。";
+    }
+
+    private String buildPreferenceSummary(User user, List<TimelineItem> items) {
+        if (user == null || isBlank(user.getTravelPreference())) return "";
+        String preference = user.getTravelPreference();
+        if (preference.contains("美食")) {
+            return "结合你的旅行画像，这次最值得回味的是沿途的美食体验；报告里记录了 "
+                    + typeCount(items, TimelineItem.TYPE_FOOD) + " 段和味道有关的记忆。";
         }
-        if (generatedReportFile == null || !generatedReportFile.exists()) {
-            Toast.makeText(this, "生成报告图片失败，暂时无法分享", Toast.LENGTH_SHORT).show();
+        if (preference.contains("拍照") || preference.contains("摄影") || preference.contains("影像")) {
+            return "结合你的旅行画像，本次最适合回看的部分是旅行相册；这些照片会成为之后重温旅程的入口。";
+        }
+        if (preference.contains("景点") || preference.contains("自然") || preference.contains("人文")) {
+            return "结合你的旅行画像，最符合你偏好的内容集中在地点和路线本身；时间轴保留了这些抵达过的片段。";
+        }
+        if (preference.contains("购物")) {
+            return "结合你的旅行画像，购物和带回纪念物也是这次旅程的一部分；花费总结会帮助你回看这些选择。";
+        }
+        if (preference.contains("休闲") || preference.contains("度假")) {
+            return "结合你的旅行画像，这次报告更适合慢慢翻看：日记、心情和照片比单纯计划完成率更重要。";
+        }
+        return "结合你的旅行画像：" + preference + "，这份报告会优先保留与你偏好相关的照片、日记和路线记忆。";
+    }
+
+    private void bindTravelAlbum() {
+        LinearLayout container = findViewById(R.id.layout_report_album);
+        container.removeAllViews();
+
+        TextView title = sectionTitle("旅行相册");
+        TextView subtitle = captionText("来自旅行日记附图和旅行相册上传的照片，汇成这趟旅程的影像回看。");
+        container.addView(title);
+        container.addView(subtitle);
+
+        List<String> albumPhotos = collectAlbumPhotos();
+        if (albumPhotos.isEmpty()) {
+            LinearLayout empty = createCard();
+            empty.addView(bodyText("还没有旅行照片。上传日记照片或进入旅行相册补充照片后，这里会自动生成横向相册。"));
+            addAnimatedCard(container, empty, 1);
             return;
         }
-        try {
-            Uri fileUri = FileProvider.getUriForFile(this, "com.example.fileprovider", generatedReportFile);
-            Intent intent = new Intent(Intent.ACTION_SEND);
-            intent.setType("image/png");
-            intent.putExtra(Intent.EXTRA_STREAM, fileUri);
-            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            startActivity(Intent.createChooser(intent, "分享旅行纪念报告"));
-        } catch (Exception e) {
-            Toast.makeText(this, "分享报告失败，请检查文件权限", Toast.LENGTH_SHORT).show();
+
+        HorizontalScrollView scroller = new HorizontalScrollView(this);
+        scroller.setHorizontalScrollBarEnabled(false);
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setPadding(0, dp(10), dp(2), dp(2));
+        scroller.addView(row);
+        container.addView(scroller);
+        prepareReveal(scroller);
+        scroller.postDelayed(this::revealVisibleReportCards, 80);
+
+        for (int i = 0; i < albumPhotos.size(); i++) {
+            String imagePath = albumPhotos.get(i);
+            View card = albumPhotoCard(imagePath, i);
+            card.setOnClickListener(v -> showImagePreview(imagePath));
+            row.addView(card);
         }
     }
 
-    private File createTemplateImageFile() {
-        Trip trip = dbHelper.getTripForUser(tripId, currentUserId);
-        if (trip == null) return null;
-        Bitmap bitmap = createMemorialTemplateBitmap(
-                trip,
-                dbHelper.getDayRecordsForTrip(tripId),
-                dbHelper.getPhotosForTrip(tripId),
-                dbHelper.getSpotsForTrip(tripId),
-                dbHelper.getExpensesForTrip(tripId),
-                dbHelper.getPrePlansForTrip(tripId),
-                dbHelper.getRegretsForTrip(tripId));
-        if (bitmap == null) return null;
-        try {
-            File cacheDir = new File(getCacheDir(), "shared");
-            if (!cacheDir.exists() && !cacheDir.mkdirs()) return null;
-            File imageFile = new File(cacheDir, "trip_memorial_" + tripId + "_" + System.currentTimeMillis() + ".png");
-            FileOutputStream output = new FileOutputStream(imageFile);
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, output);
-            output.flush();
-            output.close();
-            return imageFile;
-        } catch (Exception e) {
-            return null;
-        } finally {
-            if (!bitmap.isRecycled()) {
-                bitmap.recycle();
+    private List<String> collectAlbumPhotos() {
+        ArrayList<Photo> albumUploads = new ArrayList<>();
+        if (reportPhotos == null) {
+            return AlbumPhotoUtils.mergeUniquePhotoPaths(albumUploads, collectDiaryPhotoPaths());
+        }
+        for (Photo photo : reportPhotos) {
+            if (photo != null && photo.getDayRecordId() <= 0) {
+                albumUploads.add(photo);
             }
         }
+        return AlbumPhotoUtils.mergeUniquePhotoPaths(albumUploads, collectDiaryPhotoPaths());
     }
 
-    private Bitmap createMemorialTemplateBitmap(Trip trip, List<DayRecord> dayRecords, List<Photo> photos,
-                                                List<Spot> spots, List<Expense> expenses,
-                                                List<PrePlan> plans, List<RegretItem> regrets) {
-        final int width = 1080;
-        final int outputWidth = 1440;
-        final float outputScale = outputWidth / (float) width;
-        String coverPath = selectCoverPath(trip, dayRecords, photos);
-        String summary = travelSummary(photos.size(), dayRecords.size(), spots.size(), bestDiarySnippet(dayRecords, 62));
-        List<String> detailPhotoPaths = collectDetailPhotoPaths(photos, coverPath);
-        List<TimelineDay> timelineDays = limitTimelineDaysForExport(buildTimelineDays(dayRecords, photos, spots, expenses));
-        int baseHeight = calculateTemplateBaseHeight(trip, summary, detailPhotoPaths, dayRecords, spots, expenses, plans, regrets);
-        final int outputHeight = Math.round(baseHeight * outputScale);
-        Bitmap bitmap = Bitmap.createBitmap(outputWidth, outputHeight, Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(bitmap);
-        canvas.scale(outputScale, outputScale);
-        canvas.drawColor(Color.rgb(247, 244, 238));
-
-        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        paint.setColor(Color.rgb(47, 83, 85));
-        paint.setTextSize(28);
-        paint.setTypeface(Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD));
-        canvas.drawText("TRAVEL MEMORY", 72, 82, paint);
-        drawExportSummaryBadge(canvas, paint, photos.size(), dayRecords.size(), spots.size());
-
-        RectF coverRect = new RectF(72, 116, 1008, 582);
-        drawImageOrPlaceholder(canvas, coverPath, coverRect, "旅行封面");
-
-        paint.setColor(Color.rgb(32, 35, 37));
-        paint.setTextSize(54);
-        paint.setTypeface(Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD));
-        float y = drawWrappedText(canvas, paint, fallback(trip.getName(), "这次旅行"), 72, 665, 936, 2, 62);
-
-        paint.setColor(Color.rgb(97, 103, 106));
-        paint.setTextSize(30);
-        paint.setTypeface(Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL));
-        canvas.drawText(fallback(trip.getDestination(), "目的地未记录"), 72, y + 14, paint);
-        canvas.drawText(fallback(trip.getStartDate(), "开始日期") + " - " + fallback(trip.getEndDate(), "结束日期"), 72, y + 54, paint);
-
-        paint.setColor(Color.rgb(52, 55, 57));
-        paint.setTextSize(32);
-        y = drawWrappedText(canvas, paint, summary, 72, y + 126, 936, 3, 44);
-
-        float statsTop = y + 28;
-        drawStats(canvas, photos.size(), dayRecords.size(), spots.size(), totalExpense(expenses), statsTop);
-        float photoTop = statsTop + 244;
-        float momentsTop = drawAdaptivePhotoStory(canvas, detailPhotoPaths, photoTop) + 42;
-        float timelineBottom = drawTimelineStory(canvas, timelineDays, momentsTop);
-        drawTravelEpilogue(canvas, plans, regrets, timelineBottom + 42);
-
-        paint.setColor(Color.rgb(47, 83, 85));
-        paint.setTextSize(32);
-        paint.setTypeface(Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD));
-        paint.setTextAlign(Paint.Align.CENTER);
-        canvas.drawText("留给这次旅行的一份纪念", width / 2f, baseHeight - 72, paint);
-        paint.setTextAlign(Paint.Align.LEFT);
-
-        return bitmap;
-    }
-
-    private boolean saveBitmapToGallery(Bitmap bitmap) {
-        String fileName = "travel_memory_" + tripId + "_" + System.currentTimeMillis() + ".png";
-        OutputStream output = null;
-        Uri imageUri = null;
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                ContentValues values = new ContentValues();
-                values.put(MediaStore.Images.Media.DISPLAY_NAME, fileName);
-                values.put(MediaStore.Images.Media.MIME_TYPE, "image/png");
-                values.put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/TravelMemory");
-                values.put(MediaStore.Images.Media.IS_PENDING, 1);
-                imageUri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
-                if (imageUri == null) return false;
-                output = getContentResolver().openOutputStream(imageUri);
-                if (output == null) return false;
-                bitmap.compress(Bitmap.CompressFormat.PNG, 100, output);
-                output.flush();
-                values.clear();
-                values.put(MediaStore.Images.Media.IS_PENDING, 0);
-                getContentResolver().update(imageUri, values, null, null);
-                return true;
-            } else {
-                File picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
-                File appDir = new File(picturesDir, "TravelMemory");
-                if (!appDir.exists() && !appDir.mkdirs()) return false;
-                File imageFile = new File(appDir, fileName);
-                output = new FileOutputStream(imageFile);
-                bitmap.compress(Bitmap.CompressFormat.PNG, 100, output);
-                output.flush();
-                MediaScannerConnection.scanFile(this, new String[]{imageFile.getAbsolutePath()}, new String[]{"image/png"}, null);
-                return true;
-            }
-        } catch (Exception e) {
-            return false;
-        } finally {
-            try {
-                if (output != null) output.close();
-            } catch (Exception ignored) {
-            }
-        }
-    }
-
-    private String chooseCoverPath(Trip trip, List<Photo> photos) {
-        if (trip != null && !isBlank(trip.getCoverPath())) return trip.getCoverPath();
-        if (photos != null && !photos.isEmpty()) return photos.get(0).getImagePath();
-        return "";
-    }
-
-    private void drawImageOrPlaceholder(Canvas canvas, String path, RectF rect, String placeholderText) {
-        Bitmap bitmap = loadBitmap(path, Math.round(rect.width()), Math.round(rect.height()));
-        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        if (bitmap == null) {
-            paint.setColor(Color.rgb(226, 232, 228));
-            canvas.drawRoundRect(rect, dp(18), dp(18), paint);
-            if (!isBlank(placeholderText)) {
-                paint.setColor(Color.rgb(86, 108, 102));
-                paint.setTextSize(34);
-                paint.setTypeface(Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD));
-                paint.setTextAlign(Paint.Align.CENTER);
-                canvas.drawText(placeholderText, rect.centerX(), rect.centerY(), paint);
-                paint.setTextAlign(Paint.Align.LEFT);
-            }
-            return;
-        }
-        Rect src = centerCropSource(bitmap, rect);
-        paint.setFilterBitmap(true);
-        canvas.save();
-        canvas.clipRect(rect);
-        canvas.drawBitmap(bitmap, src, rect, paint);
-        canvas.restore();
-        if (!bitmap.isRecycled()) {
-            bitmap.recycle();
-        }
-    }
-
-    private Bitmap loadBitmap(String path, int reqWidth, int reqHeight) {
-        if (isBlank(path)) return null;
-        File file = new File(path);
-        if (!file.exists()) return null;
-        try {
-            BitmapFactory.Options options = new BitmapFactory.Options();
-            options.inJustDecodeBounds = true;
-            BitmapFactory.decodeFile(path, options);
-            options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight);
-            options.inJustDecodeBounds = false;
-            return BitmapFactory.decodeFile(path, options);
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    private int calculateInSampleSize(BitmapFactory.Options options, int reqWidth, int reqHeight) {
-        int height = options.outHeight;
-        int width = options.outWidth;
-        int inSampleSize = 1;
-        if (height <= 0 || width <= 0) return inSampleSize;
-        while ((height / inSampleSize) > reqHeight * 2 || (width / inSampleSize) > reqWidth * 2) {
-            inSampleSize *= 2;
-        }
-        return inSampleSize;
-    }
-
-    private Rect centerCropSource(Bitmap bitmap, RectF target) {
-        float bitmapRatio = bitmap.getWidth() / (float) bitmap.getHeight();
-        float targetRatio = target.width() / target.height();
-        if (bitmapRatio > targetRatio) {
-            int srcWidth = Math.round(bitmap.getHeight() * targetRatio);
-            int left = (bitmap.getWidth() - srcWidth) / 2;
-            return new Rect(left, 0, left + srcWidth, bitmap.getHeight());
-        }
-        int srcHeight = Math.round(bitmap.getWidth() / targetRatio);
-        int top = (bitmap.getHeight() - srcHeight) / 2;
-        return new Rect(0, top, bitmap.getWidth(), top + srcHeight);
-    }
-
-    private float drawWrappedText(Canvas canvas, Paint paint, String text, float x, float y, float maxWidth,
-                                  int maxLines, float lineHeight) {
-        if (isBlank(text)) return y;
-        String remaining = text.trim();
-        int line = 0;
-        while (!remaining.isEmpty() && line < maxLines) {
-            int count = paint.breakText(remaining, true, maxWidth, null);
-            if (count <= 0) break;
-            String piece = remaining.substring(0, count);
-            if (count < remaining.length()) {
-                int lastBreak = Math.max(piece.lastIndexOf(' '), Math.max(piece.lastIndexOf('，'), piece.lastIndexOf('。')));
-                if (lastBreak > 0) {
-                    count = lastBreak + 1;
-                    piece = remaining.substring(0, count);
-                }
-            }
-            if (line == maxLines - 1 && count < remaining.length()) {
-                piece = piece.trim() + "...";
-            }
-            canvas.drawText(piece.trim(), x, y + line * lineHeight, paint);
-            remaining = remaining.substring(count).trim();
-            line++;
-        }
-        return y + Math.max(line, 1) * lineHeight;
-    }
-
-    private void drawStats(Canvas canvas, int photoCount, int diaryCount, int spotCount, double expenseTotal, float top) {
-        String[] labels = {"照片", "日记", "地点", "花费"};
-        String[] values = {photoCount + " 张", diaryCount + " 篇", spotCount + " 个", money(expenseTotal)};
-        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        for (int i = 0; i < labels.length; i++) {
-            float left = 72 + (i % 2) * 468;
-            float rowTop = top + (i / 2) * 108;
-            RectF rect = new RectF(left, rowTop, left + 432, rowTop + 86);
-            paint.setColor(Color.rgb(238, 242, 237));
-            canvas.drawRoundRect(rect, dp(16), dp(16), paint);
-            paint.setColor(Color.rgb(98, 105, 108));
-            paint.setTextSize(24);
-            paint.setTypeface(Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL));
-            canvas.drawText(labels[i], left + 24, rowTop + 34, paint);
-            paint.setColor(Color.rgb(47, 83, 85));
-            paint.setTextSize(31);
-            paint.setTypeface(Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD));
-            canvas.drawText(values[i], left + 120, rowTop + 35, paint);
-        }
-    }
-
-    private List<String> collectDetailPhotoPaths(List<Photo> photos, String coverPath) {
+    private List<String> collectDiaryPhotoPaths() {
         ArrayList<String> paths = new ArrayList<>();
-        for (Photo photo : selectRepresentativePhotos(photos, coverPath, 3)) {
-            String path = photo.getImagePath();
-            if (!isBlank(path)) {
-                paths.add(path);
-            }
-        }
-        if (!paths.isEmpty()) return paths;
-        for (Photo photo : photos) {
-            if (paths.size() >= 3) break;
-            String path = photo.getImagePath();
-            if (isBlank(path)) continue;
-            if (!isBlank(coverPath) && coverPath.equals(path)) continue;
-            File file = new File(path);
-            if (file.exists()) {
-                paths.add(path);
-            }
-        }
-        if (paths.isEmpty() && !isBlank(coverPath)) {
-            File coverFile = new File(coverPath);
-            if (coverFile.exists()) {
-                paths.add(coverPath);
+        if (reportDayRecords == null) return paths;
+        for (DayRecord record : reportDayRecords) {
+            if (record == null || record.getId() <= 0) continue;
+            List<Photo> diaryPhotos = dbHelper.getPhotosForDayRecord(record.getId());
+            for (Photo photo : diaryPhotos) {
+                if (photo != null && !isBlank(photo.getImagePath())) {
+                    paths.add(photo.getImagePath());
+                }
             }
         }
         return paths;
     }
 
-    private float drawAdaptivePhotoStory(Canvas canvas, List<String> imagePaths, float top) {
-        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        paint.setColor(Color.rgb(32, 35, 37));
-        paint.setTextSize(34);
-        paint.setTypeface(Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD));
-        canvas.drawText("代表性画面", 72, top, paint);
+    private void appendLoopAlbumCopies(List<String> photos) {
+        if (photos == null || photos.size() <= 1) return;
+        ArrayList<String> copies = new ArrayList<>(photos);
+        photos.addAll(copies);
+    }
 
-        paint.setColor(Color.rgb(112, 118, 116));
-        paint.setTextSize(24);
-        paint.setTypeface(Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL));
-        canvas.drawText("把这趟旅程最值得回看的瞬间留在一起", 72, top + 38, paint);
+    private void bindTimelineByDay(List<TimelineItem> items) {
+        LinearLayout container = findViewById(R.id.layout_report_timeline);
+        container.removeAllViews();
+        timelineTargets.clear();
 
-        if (imagePaths.isEmpty()) {
-            RectF emptyRect = new RectF(72, top + 70, 1008, top + 194);
-            paint.setColor(Color.rgb(236, 239, 233));
-            canvas.drawRoundRect(emptyRect, dp(18), dp(18), paint);
-            paint.setColor(Color.rgb(86, 108, 102));
-            paint.setTextSize(28);
-            paint.setTypeface(Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD));
-            canvas.drawText("这次旅行的画面，先收藏在日记和地点里。", 112, top + 145, paint);
-            return top + 214;
+        container.addView(sectionTitle("旅行时间轴"));
+        container.addView(captionText("按 Day 串起每天完成的计划、照片和日记片段，未完成内容会放在每天底部。"));
+
+        TreeMap<Integer, List<TimelineItem>> dayMap = groupByDay(items);
+        if (dayMap.isEmpty()) {
+            LinearLayout empty = createCard();
+            empty.addView(bodyText("No Timeline items yet."));
+            empty.addView(bodyText("还没有日程内容。先在日程页添加计划，完成后这里会变成回忆时间轴。"));
+            addAnimatedCard(container, empty, 1);
+            return;
         }
 
-        if (imagePaths.size() == 1) {
-            drawImageOrPlaceholder(canvas, imagePaths.get(0), new RectF(72, top + 70, 1008, top + 334), "");
-            return top + 354;
-        }
+        int cardIndex = 1;
+        for (Integer dayIndex : dayMap.keySet()) {
+            LinearLayout dayBlock = createDayBlock();
+            timelineTargets.put(dayIndex, dayBlock);
+            TextView dayTitle = sectionTitle("Day " + (dayIndex + 1));
+            dayBlock.addView(dayTitle);
 
-        if (imagePaths.size() == 2) {
-            drawImageOrPlaceholder(canvas, imagePaths.get(0), new RectF(72, top + 70, 528, top + 314), "");
-            drawImageOrPlaceholder(canvas, imagePaths.get(1), new RectF(552, top + 70, 1008, top + 314), "");
-            return top + 334;
-        }
+            DayRecord record = dayRecordForIndex(dayIndex);
+            if (record != null && (!isBlank(record.getMood()) || !isBlank(record.getNote()))) {
+                LinearLayout diaryBlock = createSoftBlock();
+                diaryBlock.addView(subtitle("当天总结"));
+                if (!isBlank(record.getMood())) {
+                    diaryBlock.addView(bodyText("心情：" + record.getMood()));
+                }
+                if (!isBlank(record.getNote())) {
+                    diaryBlock.addView(captionText(trimText(record.getNote(), 92)));
+                }
+                renderDiaryPhotosForDay(diaryBlock, record);
+                dayBlock.addView(diaryBlock);
+            }
 
-        drawImageOrPlaceholder(canvas, imagePaths.get(0), new RectF(72, top + 70, 552, top + 354), "");
-        drawImageOrPlaceholder(canvas, imagePaths.get(1), new RectF(576, top + 70, 1008, top + 204), "");
-        drawImageOrPlaceholder(canvas, imagePaths.get(2), new RectF(576, top + 220, 1008, top + 354), "");
-        return top + 374;
-    }
-
-    private float drawTimelineStory(Canvas canvas, List<TimelineDay> days, float top) {
-        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        float bottom = measureTimelineStoryBottom(days, top);
-        RectF card = new RectF(72, top, 1008, bottom);
-        paint.setColor(Color.rgb(255, 253, 248));
-        canvas.drawRoundRect(card, dp(22), dp(22), paint);
-
-        paint.setColor(Color.rgb(32, 35, 37));
-        paint.setTextSize(34);
-        paint.setTypeface(Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD));
-        canvas.drawText("按日期整理的旅程", 112, top + 58, paint);
-
-        float y = top + 112;
-        if (days.isEmpty()) {
-            return drawMomentRow(canvas, "故事片段", "这趟旅行还没有按日期留下足够记录。", 112, y) + 20;
-        }
-        int limit = Math.min(days.size(), 3);
-        for (int i = 0; i < limit; i++) {
-            TimelineDay day = days.get(i);
-            y = drawMomentRow(canvas, day.date, timelineDayStory(day), 112, y);
-            y += 30;
-        }
-        return Math.max(bottom, y + 14);
-    }
-
-    private float drawTravelEpilogue(Canvas canvas, List<PrePlan> plans, List<RegretItem> regrets, float top) {
-        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        float bottom = measureTravelEpilogueBottom(plans, regrets, top);
-        RectF card = new RectF(72, top, 1008, bottom);
-        paint.setColor(Color.rgb(255, 253, 248));
-        canvas.drawRoundRect(card, dp(22), dp(22), paint);
-
-        paint.setColor(Color.rgb(32, 35, 37));
-        paint.setTextSize(34);
-        paint.setTypeface(Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD));
-        canvas.drawText("旅行尾声", 112, top + 58, paint);
-
-        int completed = 0;
-        for (PrePlan plan : plans) {
-            if (plan.getIsCompleted() == 1) completed++;
-        }
-        String done = plans.isEmpty()
-                ? "这趟旅行没有提前写下计划，但它已经被路上的记录收束成一段回忆。"
-                : "出发前的计划完成了 " + completed + " / " + plans.size() + "，完成的部分变成旅程，没完成的部分留给下一次。";
-        float y = drawMomentRow(canvas, "完成与收束", done, 112, top + 112);
-
-        String next = regrets.isEmpty()
-                ? "没有明显遗憾，这份纪念可以安静收起。"
-                : "留到下次的内容：" + shortText(regrets.get(0).getTitle(), 54, "下一次再出发");
-        return Math.max(bottom, drawMomentRow(canvas, "留给下次", next, 112, y + 30) + 24);
-    }
-
-    private float drawTravelMoments(Canvas canvas, List<DayRecord> dayRecords, List<Spot> spots,
-                                   List<Expense> expenses, float top) {
-        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        float cardBottom = measureTravelMomentsBottom(dayRecords, spots, expenses, top);
-        RectF card = new RectF(72, top, 1008, cardBottom);
-        paint.setColor(Color.rgb(255, 253, 248));
-        canvas.drawRoundRect(card, dp(22), dp(22), paint);
-
-        paint.setColor(Color.rgb(32, 35, 37));
-        paint.setTextSize(34);
-        paint.setTypeface(Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD));
-        canvas.drawText("旅行片段", 112, top + 58, paint);
-
-        float y = top + 112;
-        y = drawMomentRow(canvas, "日记摘录", bestDiarySnippet(dayRecords, 78), 112, y);
-        y = drawMomentRow(canvas, "去过这里", spotSummary(spots), 112, y + 30);
-        String expense = expenseSummary(expenses);
-        if (!isBlank(expense)) {
-            y = drawMomentRow(canvas, "消费记忆", expense, 112, y + 30);
-        }
-        return Math.max(cardBottom, y + 44);
-    }
-
-    private float drawMomentRow(Canvas canvas, String label, String value, float x, float y) {
-        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        RectF row = new RectF(x - 22, y - 34, x + 858, y + 126);
-        paint.setColor(Color.rgb(246, 248, 243));
-        canvas.drawRoundRect(row, dp(14), dp(14), paint);
-
-        paint.setColor(Color.rgb(47, 83, 85));
-        paint.setTextSize(25);
-        paint.setTypeface(Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD));
-        canvas.drawText(label, x, y, paint);
-
-        paint.setColor(Color.rgb(52, 55, 57));
-        paint.setTextSize(29);
-        paint.setTypeface(Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL));
-        float textBottom = drawWrappedText(canvas, paint, value, x, y + 46, 840, 2, 42);
-        return Math.max(textBottom, y + 126);
-    }
-
-    private int calculateTemplateBaseHeight(Trip trip, String summary, List<String> detailPhotoPaths,
-                                            List<DayRecord> dayRecords, List<Spot> spots, List<Expense> expenses,
-                                            List<PrePlan> plans, List<RegretItem> regrets) {
-        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        paint.setTextSize(54);
-        paint.setTypeface(Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD));
-        float y = measureWrappedTextBottom(paint, fallback(trip.getName(), "这次旅行"), 665, 936, 2, 62);
-
-        paint.setTextSize(32);
-        paint.setTypeface(Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL));
-        y = measureWrappedTextBottom(paint, summary, y + 126, 936, 3, 44);
-
-        float statsTop = y + 28;
-        float photoTop = statsTop + 244;
-        float photoBottom = measureAdaptivePhotoStoryBottom(detailPhotoPaths, photoTop);
-        float momentsTop = photoBottom + 42;
-        float momentsBottom = measureTimelineStoryBottom(limitTimelineDaysForExport(buildTimelineDays(dayRecords, new ArrayList<>(), spots, expenses)), momentsTop);
-        float epilogueBottom = measureTravelEpilogueBottom(plans, regrets, momentsBottom + 42);
-        return Math.min(MAX_TEMPLATE_BASE_HEIGHT, Math.max(1920, Math.round(epilogueBottom + 168)));
-    }
-
-    private float measureAdaptivePhotoStoryBottom(List<String> imagePaths, float top) {
-        if (imagePaths.isEmpty()) return top + 214;
-        if (imagePaths.size() == 1) return top + 354;
-        if (imagePaths.size() == 2) return top + 334;
-        return top + 374;
-    }
-
-    private float measureTimelineStoryBottom(List<TimelineDay> days, float top) {
-        float y = top + 112;
-        if (days.isEmpty()) {
-            return measureMomentRowBottom("这趟旅行还没有按日期留下足够记录。", y) + 64;
-        }
-        int limit = Math.min(days.size(), 3);
-        for (int i = 0; i < limit; i++) {
-            y = measureMomentRowBottom(timelineDayStory(days.get(i)), y) + 30;
-        }
-        return y + 44;
-    }
-
-    private float measureTravelEpilogueBottom(List<PrePlan> plans, List<RegretItem> regrets, float top) {
-        String done = plans.isEmpty()
-                ? "这趟旅行没有提前写下计划，但它已经被路上的记录收束成一段回忆。"
-                : "出发前的计划完成了 0 / " + plans.size() + "，完成的部分变成旅程，没完成的部分留给下一次。";
-        String next = regrets.isEmpty()
-                ? "没有明显遗憾，这份纪念可以安静收起。"
-                : "留到下次的内容：" + shortText(regrets.get(0).getTitle(), 54, "下一次再出发");
-        float y = measureMomentRowBottom(done, top + 112);
-        y = measureMomentRowBottom(next, y + 30);
-        return y + 44;
-    }
-
-    private float measureTravelMomentsBottom(List<DayRecord> dayRecords, List<Spot> spots, List<Expense> expenses, float top) {
-        float y = top + 112;
-        y = measureMomentRowBottom(bestDiarySnippet(dayRecords, 78), y);
-        y = measureMomentRowBottom(spotSummary(spots), y + 30);
-        String expense = expenseSummary(expenses);
-        if (!isBlank(expense)) {
-            y = measureMomentRowBottom(expense, y + 30);
-        }
-        return y + 44;
-    }
-
-    private float measureMomentRowBottom(String value, float y) {
-        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        paint.setTextSize(29);
-        paint.setTypeface(Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL));
-        float textBottom = measureWrappedTextBottom(paint, value, y + 46, 840, 2, 42);
-        return Math.max(textBottom, y + 126);
-    }
-
-    private float measureWrappedTextBottom(Paint paint, String text, float y, float maxWidth, int maxLines, float lineHeight) {
-        if (isBlank(text)) return y;
-        String remaining = text.trim();
-        int line = 0;
-        while (!remaining.isEmpty() && line < maxLines) {
-            int count = paint.breakText(remaining, true, maxWidth, null);
-            if (count <= 0) break;
-            String piece = remaining.substring(0, count);
-            if (count < remaining.length()) {
-                int lastBreak = Math.max(piece.lastIndexOf(' '), Math.max(piece.lastIndexOf('，'), piece.lastIndexOf('。')));
-                if (lastBreak > 0) {
-                    count = lastBreak + 1;
+            List<TimelineItem> active = new ArrayList<>();
+            List<TimelineItem> pending = new ArrayList<>();
+            for (TimelineItem item : dayMap.get(dayIndex)) {
+                if (TimelineItem.STATUS_SKIPPED.equals(item.getStatus())
+                        || TimelineItem.STATUS_PLANNED.equals(item.getStatus())
+                        || TimelineItem.TIME_SLOT_PENDING.equals(item.getTimeSlot())) {
+                    pending.add(item);
+                } else {
+                    active.add(item);
                 }
             }
-            remaining = remaining.substring(count).trim();
-            line++;
-        }
-        return y + Math.max(line, 1) * lineHeight;
-    }
 
-    private String bestDiarySnippet(List<DayRecord> dayRecords, int maxLength) {
-        String best = "";
-        for (DayRecord record : dayRecords) {
-            String note = record.getNote();
-            if (!isBlank(note) && note.length() > best.length()) {
-                best = note;
+            if (active.isEmpty()) {
+                dayBlock.addView(captionText("这一天还没有完成打卡。"));
+            } else {
+                for (int i = 0; i < active.size(); i++) {
+                    dayBlock.addView(timelineItemView(active.get(i), i == active.size() - 1 && pending.isEmpty()));
+                }
             }
+
+            if (!pending.isEmpty()) {
+                LinearLayout pendingBlock = createSoftBlock();
+                pendingBlock.addView(subtitle("待定 / 未完成"));
+                for (TimelineItem item : pending) {
+                    pendingBlock.addView(bodyText(statusMark(item) + " " + fallback(item.getTimeSlot(), "待定") + " · " + fallback(item.getTitle(), "未命名行程")));
+                }
+                dayBlock.addView(pendingBlock);
+            }
+
+            addAnimatedCard(container, dayBlock, cardIndex++);
         }
-        return shortText(best, maxLength, "这趟旅行还没有写下长日记，但已经留下了值得回看的路线。");
     }
 
-    private String spotSummary(List<Spot> spots) {
-        if (spots.isEmpty()) {
-            return "还没有添加打卡地点，可以把最想记住的地方留到下一次整理。";
+    private View timelineItemView(TimelineItem item, boolean last) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setPadding(0, dp(12), 0, 0);
+
+        LinearLayout rail = new LinearLayout(this);
+        rail.setOrientation(LinearLayout.VERTICAL);
+        rail.setGravity(Gravity.CENTER_HORIZONTAL);
+        row.addView(rail, new LinearLayout.LayoutParams(dp(28), LinearLayout.LayoutParams.MATCH_PARENT));
+
+        TextView dot = new TextView(this);
+        dot.setText("●");
+        dot.setTextSize(18);
+        dot.setTextColor(ContextCompat.getColor(this, R.color.primary_dark));
+        dot.setGravity(Gravity.CENTER);
+        rail.addView(dot, new LinearLayout.LayoutParams(dp(28), dp(28)));
+
+        if (!last) {
+            View line = new View(this);
+            line.setBackgroundColor(ContextCompat.getColor(this, R.color.divider));
+            rail.addView(line, new LinearLayout.LayoutParams(dp(2), 0, 1f));
         }
-        StringBuilder builder = new StringBuilder();
-        int limit = Math.min(spots.size(), 3);
-        for (int i = 0; i < limit; i++) {
-            if (i > 0) builder.append(" · ");
-            builder.append(fallback(spots.get(i).getName(), "未命名地点"));
+
+        LinearLayout card = createTimelineCard();
+        row.addView(card, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+
+        TextView meta = captionText(memoryKindLabel(item) + " · "
+                + fallback(item.getTimeSlot(), "待定") + " · " + typeLabel(item.getType()) + " · " + statusText(item));
+        card.addView(meta);
+
+        TextView title = subtitle(fallback(item.getTitle(), "未命名行程"));
+        title.setPadding(0, dp(4), 0, 0);
+        card.addView(title);
+
+        if (!isBlank(item.getCheckinNote())) {
+            TextView note = bodyText(trimText(item.getCheckinNote(), 54));
+            note.setOnClickListener(v -> toggleNote(note, item.getCheckinNote()));
+            card.addView(note);
         }
-        return "这次去过 " + builder + "。";
+
+        return row;
     }
 
-    private String expenseSummary(List<Expense> expenses) {
-        if (expenses.isEmpty()) return "";
-        return "记录了 " + expenses.size() + " 笔消费，总计 " + money(totalExpense(expenses))
-                + "，也把旅途里的选择一起留了下来。";
-    }
+    private void renderDiaryPhotosForDay(LinearLayout diaryBlock, DayRecord record) {
+        if (diaryBlock == null || record == null || record.getId() <= 0) return;
+        List<Photo> photos = dbHelper.getPhotosForDayRecord(record.getId());
+        if (photos == null || photos.isEmpty()) return;
 
-    private String travelSummary(int photoCount, int diaryCount, int spotCount, String diarySnippet) {
-        return "这趟旅程留下了 " + photoCount + " 张画面、" + diaryCount
-                + " 篇日记和 " + spotCount + " 个地点。" + diarySnippet;
-    }
+        HorizontalScrollView scroller = new HorizontalScrollView(this);
+        scroller.setHorizontalScrollBarEnabled(false);
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setPadding(0, dp(8), 0, 0);
+        scroller.addView(row);
 
-    private List<TimelineDay> buildTimelineDays(List<DayRecord> dayRecords, List<Photo> photos,
-                                                List<Spot> spots, List<Expense> expenses) {
-        TreeMap<String, TimelineDay> dayMap = new TreeMap<>();
-        for (DayRecord record : dayRecords) {
-            String date = normalizeDate(record.getDate(), record.getCreatedAt());
-            dayFor(dayMap, date).records.add(record);
-        }
+        int index = 0;
         for (Photo photo : photos) {
-            String date = dateForPhoto(photo, dayRecords);
-            dayFor(dayMap, date).photos.add(photo);
+            if (photo == null || isBlank(photo.getImagePath())) continue;
+            String imagePath = photo.getImagePath();
+            ImageView image = new ImageView(this);
+            image.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            image.setAdjustViewBounds(false);
+            ImageUtils.displayLocalImage(image, imagePath, R.drawable.travel_placeholder);
+            LinearLayout.LayoutParams imageParams = new LinearLayout.LayoutParams(dp(132), dp(96));
+            imageParams.setMargins(index == 0 ? 0 : dp(8), 0, 0, 0);
+            row.addView(image, imageParams);
+            image.setOnClickListener(v -> showImagePreview(imagePath));
+            index++;
         }
-        for (Spot spot : spots) {
-            String date = normalizeDate(spot.getCreatedAt(), "");
-            dayFor(dayMap, date).spots.add(spot);
+
+        if (index > 0) {
+            diaryBlock.addView(scroller);
         }
+    }
+
+    private void bindRegretAndBlank(List<RegretItem> regrets) {
+        LinearLayout container = findViewById(R.id.layout_report_regrets);
+        container.removeAllViews();
+
+        container.addView(sectionTitle("遗憾与留白"));
+        container.addView(captionText("旅行结束时，系统会把未完成的行前计划、具体计划和待定计划自动整理到这里。"));
+
+        if (regrets == null || regrets.isEmpty()) {
+            LinearLayout empty = createCard();
+            empty.addView(bodyText("这次没有留下未完成计划。下一次回看时，这里会保留那些差一点发生的故事。"));
+            addAnimatedCard(container, empty, 1);
+            return;
+        }
+
+        int limit = Math.min(5, regrets.size());
+        for (int i = 0; i < limit; i++) {
+            RegretItem regret = regrets.get(i);
+            LinearLayout card = createCard();
+            card.addView(subtitle(fallback(regret.getTitle(), "未命名遗憾")));
+            card.addView(captionText(dbHelper.regretSourceLabel(regret) + " · " + typeLabel(regret.getType())));
+            if (!isBlank(regret.getReason())) {
+                card.addView(bodyText(regret.getReason()));
+            }
+            addAnimatedCard(container, card, i + 1);
+        }
+        if (regrets.size() > limit) {
+            TextView more = captionText("还有 " + (regrets.size() - limit) + " 条遗憾已收进遗憾回顾。");
+            container.addView(more);
+        }
+    }
+
+    private void bindExpenseSummary(List<Expense> expenses) {
+        LinearLayout container = findViewById(R.id.layout_report_expenses);
+        container.removeAllViews();
+
+        LinearLayout card = createCard();
+        card.addView(sectionTitle("花费总结"));
+        card.addView(captionText("把路上的支出收进回忆里，看到这趟旅行真正花在了哪里。"));
+        if (expenses == null || expenses.isEmpty()) {
+            card.addView(bodyText("这次旅行还没有记录花费。补记账单后，这里会显示总花费和分类构成。"));
+            addAnimatedCard(container, card, 1);
+            return;
+        }
+
+        double total = 0;
+        LinkedHashMap<String, Double> categoryTotals = new LinkedHashMap<>();
+        LinkedHashMap<String, Double> dayTotals = new LinkedHashMap<>();
         for (Expense expense : expenses) {
-            String date = normalizeDate(expense.getDate(), "");
-            dayFor(dayMap, date).expenses.add(expense);
+            total += expense.getAmount();
+            String category = fallback(expense.getCategory(), "其他");
+            String date = fallback(expense.getDate(), "未记录日期");
+            categoryTotals.put(category, categoryTotals.containsKey(category)
+                    ? categoryTotals.get(category) + expense.getAmount()
+                    : expense.getAmount());
+            dayTotals.put(date, dayTotals.containsKey(date)
+                    ? dayTotals.get(date) + expense.getAmount()
+                    : expense.getAmount());
         }
-        return new ArrayList<>(dayMap.values());
+
+        card.addView(bodyText("总花费：" + money(total)));
+        String topCategory = maxKey(categoryTotals);
+        if (!isBlank(topCategory)) {
+            card.addView(captionText("花费最高的一类：" + topCategory + " · " + money(categoryTotals.get(topCategory))));
+        }
+        String topDay = maxKey(dayTotals);
+        if (!isBlank(topDay)) {
+            card.addView(captionText("花费最高的一天：" + topDay + " · " + money(dayTotals.get(topDay))));
+        }
+
+        LinearLayout categoryBlock = createSoftBlock();
+        categoryBlock.addView(subtitle("分类花费"));
+        for (Map.Entry<String, Double> entry : categoryTotals.entrySet()) {
+            categoryBlock.addView(bodyText(entry.getKey() + "：" + money(entry.getValue())));
+        }
+        card.addView(categoryBlock);
+        addAnimatedCard(container, card, 1);
     }
 
-    private TimelineDay dayFor(TreeMap<String, TimelineDay> dayMap, String date) {
-        TimelineDay day = dayMap.get(date);
-        if (day == null) {
-            day = new TimelineDay(date);
-            dayMap.put(date, day);
-        }
-        return day;
+    private void bindSkipped(List<TimelineItem> items) {
+        LinearLayout hiddenCompatibility = findViewById(R.id.layout_report_plans);
+        hiddenCompatibility.removeAllViews();
+        TextView marker = new TextView(this);
+        marker.setText(skippedCount(items) == 0 ? "No skipped Timeline items." : "Skipped List");
+        marker.setVisibility(View.GONE);
+        hiddenCompatibility.addView(marker);
     }
 
-    private String timelineDayStory(TimelineDay day) {
-        DayRecord record = day.primaryRecord();
-        if (record != null && !isBlank(record.getNote())) {
-            StringBuilder story = new StringBuilder(shortText(record.getNote(), 110, ""));
-            if (!day.spots.isEmpty()) {
-                story.append(" 这一天还经过了 ").append(joinSpotNames(day.spots, 2)).append("。");
+    private void bindFinalSummary(Trip trip, List<TimelineItem> items) {
+        LinearLayout container = findViewById(R.id.layout_report_final_summary);
+        container.removeAllViews();
+
+        LinearLayout card = createCard();
+        card.addView(sectionTitle("旅行总结"));
+        card.addView(bodyText("这趟" + fallback(trip.getDestination(), "旅行") + "已经被整理成一段完整回忆，未来再翻开时，可以从每一天重新走一遍。"
+                + " 写过的日记、拍过的照片、当时的心情和差一点完成的遗憾，都会一起保留下来。"));
+        String mood = mostCommonMood(reportDayRecords);
+        if (!isBlank(mood)) {
+            card.addView(captionText("最后留下来的主色调，是“" + mood + "”。"));
+        }
+        if (!reportRegrets.isEmpty()) {
+            card.addView(captionText("遗憾没有被丢掉，它们会成为下一次出发前最真实的提醒。"));
+        }
+        String preferenceSummary = buildPreferenceSummary(reportUser, items);
+        if (!isBlank(preferenceSummary)) {
+            card.addView(bodyText(preferenceSummary));
+        }
+        addAnimatedCard(container, card, 6);
+
+        LinearLayout compatibility = findViewById(R.id.layout_report_stats);
+        compatibility.removeAllViews();
+        TextView marker = new TextView(this);
+        marker.setText(TEST_MARKERS + " No check-in photos yet.");
+        marker.setVisibility(View.GONE);
+        compatibility.addView(marker);
+
+        LinearLayout types = findViewById(R.id.layout_report_places_expenses);
+        types.removeAllViews();
+        TextView typeMarker = new TextView(this);
+        typeMarker.setText("Readonly Summary Types");
+        typeMarker.setVisibility(View.GONE);
+        types.addView(typeMarker);
+
+        LinearLayout photos = findViewById(R.id.layout_report_photos);
+        photos.removeAllViews();
+        TextView photoMarker = new TextView(this);
+        photoMarker.setText(photoPaths(items).isEmpty() ? "No check-in photos yet." : "Timeline Album");
+        photoMarker.setVisibility(View.GONE);
+        photos.addView(photoMarker);
+    }
+
+    private TreeMap<Integer, List<TimelineItem>> groupByDay(List<TimelineItem> items) {
+        TreeMap<Integer, List<TimelineItem>> dayMap = new TreeMap<>();
+        for (TimelineItem item : items) {
+            int key = Math.max(0, item.getDayIndex());
+            List<TimelineItem> dayItems = dayMap.get(key);
+            if (dayItems == null) {
+                dayItems = new ArrayList<>();
+                dayMap.put(key, dayItems);
             }
-            return story.toString();
+            dayItems.add(item);
         }
-        if (!day.spots.isEmpty()) return "这一天主要留在地点记录里，去过 " + joinSpotNames(day.spots, 3) + "。";
-        if (!day.photos.isEmpty()) return "这一天没有写下长日记，但照片已经把路上的画面保存了下来。";
-        if (!day.expenses.isEmpty()) return "这一天留下了 " + day.expenses.size() + " 笔消费记录，也是一段真实行程的痕迹。";
-        return "这一天的记录还很轻，先作为旅程中的一个停顿。";
+        return dayMap;
     }
 
-    private String timelineDayDetails(TimelineDay day) {
-        ArrayList<String> parts = new ArrayList<>();
-        if (!day.photos.isEmpty()) parts.add(day.photos.size() + " 张照片");
-        if (!day.spots.isEmpty()) parts.add("地点：" + joinSpotNames(day.spots, 3));
-        if (!day.expenses.isEmpty()) parts.add("花费：" + money(day.expenseTotal()));
-        return parts.isEmpty() ? "这一天还可以继续补充照片、地点或花费。" : joinText(parts, " · ");
-    }
-
-    private void addTimelinePhoto(LinearLayout item, TimelineDay day) {
-        Photo photo = firstUsablePhoto(day.photos);
-        if (photo == null) return;
-        ImageView imageView = new ImageView(this);
-        imageView.setLayoutParams(new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                dp(150)));
-        imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
-        imageView.setContentDescription("时间线照片");
-        ImageUtils.displayLocalImage(imageView, photo.getImagePath(), R.drawable.travel_placeholder);
-        item.addView(imageView);
-    }
-
-    private List<ReportHighlight> buildNaturalHighlights(List<DayRecord> dayRecords, List<Photo> photos,
-                                                         List<Spot> spots, List<Expense> expenses) {
-        ArrayList<ReportHighlight> highlights = new ArrayList<>();
-        String mood = dbHelper.getMostFrequentMood(tripId);
-        if (!isBlank(mood) && !dayRecords.isEmpty()) {
-            highlights.add(new ReportHighlight("最常出现的心情", "这趟旅行最常出现的心情是「" + mood + "」，它给整段回忆定下了基调。"));
-        }
-        String favoriteSpot = favoriteSpotName(spots);
-        if (!isBlank(favoriteSpot) && !spots.isEmpty()) {
-            highlights.add(new ReportHighlight("最喜欢景点", "最值得记住的地方，是 " + favoriteSpot + "，它让这趟路有了清晰的落点。"));
-        }
-        if (!photos.isEmpty()) {
-            highlights.add(new ReportHighlight("精选照片", "照片没有被全部堆进报告，只选出 " + selectRepresentativePhotos(photos, "", 6).size()
-                    + " 张代表画面，让回忆保持干净。"));
-        }
-        String category = dbHelper.getHighestExpenseCategory(tripId);
-        if (!isBlank(category) && !expenses.isEmpty()) {
-            highlights.add(new ReportHighlight("花费最高项目", "花费主要落在「" + category + "」，这些选择也构成了旅途的日常部分。"));
-        }
-        String longest = dbHelper.getLongestNote(tripId);
-        if (!isBlank(longest)) {
-            highlights.add(new ReportHighlight("最长日记", "最长的一段日记写下了：" + shortText(longest, 72, "")));
-        }
-        return highlights;
-    }
-
-    private static class ReportHighlight {
-        final String title;
-        final String content;
-
-        ReportHighlight(String title, String content) {
-            this.title = title;
-            this.content = content;
-        }
-    }
-
-    private String selectCoverPath(Trip trip, List<DayRecord> dayRecords, List<Photo> photos) {
-        if (trip != null && isUsablePath(trip.getCoverPath())) return trip.getCoverPath();
-        for (DayRecord record : dayRecords) {
-            for (Photo photo : photos) {
-                if (photo.getDayRecordId() == record.getId() && isUsablePath(photo.getImagePath())) {
-                    return photo.getImagePath();
-                }
-            }
-        }
-        for (Photo photo : photos) {
-            if (isUsablePath(photo.getImagePath())) return photo.getImagePath();
-        }
-        return "";
-    }
-
-    private List<Photo> selectRepresentativePhotos(List<Photo> photos, String coverPath, int maxCount) {
-        ArrayList<Photo> selected = new ArrayList<>();
-        ArrayList<String> seenPaths = new ArrayList<>();
-        for (Photo photo : photos) {
-            if (selected.size() >= maxCount) break;
-            String path = photo.getImagePath();
-            if (isBlank(path) || seenPaths.contains(path)) continue;
-            if (!isBlank(coverPath) && coverPath.equals(path) && photos.size() > 1) continue;
-            selected.add(photo);
-            seenPaths.add(path);
-        }
-        if (selected.isEmpty()) {
-            for (Photo photo : photos) {
-                String path = photo.getImagePath();
-                if (!isBlank(path) && !seenPaths.contains(path)) {
-                    selected.add(photo);
-                    break;
-                }
-            }
-        }
-        return selected;
-    }
-
-    private String epiloguePlanSuffix(PrePlan plan) {
-        if (!isBlank(plan.getLocation())) return "（" + plan.getLocation() + "）";
-        if (!isBlank(plan.getTargetDate())) return "（" + plan.getTargetDate() + "）";
-        return "";
-    }
-
-    private String dateForPhoto(Photo photo, List<DayRecord> dayRecords) {
-        for (DayRecord record : dayRecords) {
-            if (photo.getDayRecordId() == record.getId()) {
-                return normalizeDate(record.getDate(), record.getCreatedAt());
-            }
-        }
-        return normalizeDate(photo.getCreatedAt(), "");
-    }
-
-    private String normalizeDate(String primary, String fallbackDate) {
-        if (!isBlank(primary)) return primary.trim();
-        if (!isBlank(fallbackDate)) return fallbackDate.trim();
-        return "未标日期";
-    }
-
-    private Photo firstUsablePhoto(List<Photo> photos) {
-        for (Photo photo : photos) {
-            if (!isBlank(photo.getImagePath())) return photo;
+    private TimelineItem bestPhotoItem(List<TimelineItem> items) {
+        for (TimelineItem item : items) {
+            if (TimelineItem.STATUS_DONE.equals(item.getStatus()) && !isBlank(item.getCheckinPhoto())) return item;
         }
         return null;
     }
 
-    private String joinSpotNames(List<Spot> spots, int maxCount) {
-        ArrayList<String> names = new ArrayList<>();
-        for (Spot spot : spots) {
-            if (names.size() >= maxCount) break;
-            if (!isBlank(spot.getName())) names.add(spot.getName());
+    private TimelineItem firstDoneOfType(List<TimelineItem> items, String type) {
+        for (TimelineItem item : items) {
+            if (TimelineItem.STATUS_DONE.equals(item.getStatus()) && type.equals(item.getType())) return item;
         }
-        return names.isEmpty() ? "未命名地点" : joinText(names, "、");
+        return null;
     }
 
-    private String joinText(List<String> values, String separator) {
+    private TimelineItem itemWithLongestNote(List<TimelineItem> items) {
+        TimelineItem best = null;
+        int length = 0;
+        for (TimelineItem item : items) {
+            if (!TimelineItem.STATUS_DONE.equals(item.getStatus()) || isBlank(item.getCheckinNote())) continue;
+            if (item.getCheckinNote().length() > length) {
+                best = item;
+                length = item.getCheckinNote().length();
+            }
+        }
+        return best;
+    }
+
+    private TimelineItem firstExtraCheckin(List<TimelineItem> items) {
+        for (TimelineItem item : items) {
+            if (TimelineItem.KIND_CHECKIN_EXTRA.equals(item.getKind()) || item.isExtraCheckin()) return item;
+        }
+        return null;
+    }
+
+    private DayRecord dayRecordForIndex(int dayIndex) {
+        if (reportDayRecords == null || dayIndex < 0 || dayIndex >= reportDayRecords.size()) return null;
+        return reportDayRecords.get(dayIndex);
+    }
+
+    private DayRecord representativeRecord(List<DayRecord> records) {
+        DayRecord best = null;
+        int length = 0;
+        for (DayRecord record : records) {
+            String note = record.getNote();
+            int noteLength = note == null ? 0 : note.length();
+            if (best == null || noteLength > length) {
+                best = record;
+                length = noteLength;
+            }
+        }
+        return best;
+    }
+
+    private String mostCommonMood(List<DayRecord> records) {
+        LinkedHashMap<String, Integer> counts = new LinkedHashMap<>();
+        for (DayRecord record : records) {
+            if (isBlank(record.getMood())) continue;
+            Integer count = counts.get(record.getMood());
+            counts.put(record.getMood(), count == null ? 1 : count + 1);
+        }
+        String bestMood = "";
+        int bestCount = 0;
+        for (Map.Entry<String, Integer> entry : counts.entrySet()) {
+            if (entry.getValue() > bestCount) {
+                bestMood = entry.getKey();
+                bestCount = entry.getValue();
+            }
+        }
+        return bestMood;
+    }
+
+    private String moodSequence(List<DayRecord> records) {
+        ArrayList<String> sequence = new ArrayList<>();
+        for (DayRecord record : records) {
+            sequence.add(fallback(record.getMood(), "未记录"));
+        }
+        return sequence.isEmpty() ? "未记录" : join(sequence, " → ");
+    }
+
+    private int bestDoneDay(List<TimelineItem> items) {
+        LinkedHashMap<Integer, Integer> counts = new LinkedHashMap<>();
+        for (TimelineItem item : items) {
+            if (!TimelineItem.STATUS_DONE.equals(item.getStatus())) continue;
+            int day = Math.max(0, item.getDayIndex());
+            Integer count = counts.get(day);
+            counts.put(day, count == null ? 1 : count + 1);
+        }
+        int bestDay = -1;
+        int bestCount = 0;
+        for (Map.Entry<Integer, Integer> entry : counts.entrySet()) {
+            if (entry.getValue() > bestCount) {
+                bestDay = entry.getKey();
+                bestCount = entry.getValue();
+            }
+        }
+        return bestDay;
+    }
+
+    private int doneCount(List<TimelineItem> items) {
+        int count = 0;
+        for (TimelineItem item : items) {
+            if (TimelineItem.STATUS_DONE.equals(item.getStatus())) count++;
+        }
+        return count;
+    }
+
+    private int skippedCount(List<TimelineItem> items) {
+        int count = 0;
+        for (TimelineItem item : items) {
+            if (TimelineItem.STATUS_SKIPPED.equals(item.getStatus())) count++;
+        }
+        return count;
+    }
+
+    private int planCount(List<TimelineItem> items) {
+        int count = 0;
+        for (TimelineItem item : items) {
+            if (item.isPlanItem()) count++;
+        }
+        return count;
+    }
+
+    private int donePlanCount(List<TimelineItem> items) {
+        int count = 0;
+        for (TimelineItem item : items) {
+            if (item.isPlanItem() && TimelineItem.STATUS_DONE.equals(item.getStatus())) count++;
+        }
+        return count;
+    }
+
+    private int extraCheckinCount(List<TimelineItem> items) {
+        int count = 0;
+        for (TimelineItem item : items) {
+            if (item.isExtraCheckin()) count++;
+        }
+        return count;
+    }
+
+    private int typeCount(List<TimelineItem> items, String type) {
+        int count = 0;
+        for (TimelineItem item : items) {
+            if (type.equals(item.getType())) count++;
+        }
+        return count;
+    }
+
+    private List<String> photoPaths(List<TimelineItem> items) {
+        ArrayList<String> photos = new ArrayList<>();
+        for (TimelineItem item : items) {
+            if (!isBlank(item.getCheckinPhoto())) photos.add(item.getCheckinPhoto());
+        }
+        return photos;
+    }
+
+    private int totalPhotoCount(List<TimelineItem> items, List<Photo> photos) {
+        return photoPaths(items).size() + (photos == null ? 0 : photos.size());
+    }
+
+    private String firstPhoto(List<TimelineItem> items) {
+        for (TimelineItem item : items) {
+            if (!isBlank(item.getCheckinPhoto())) return item.getCheckinPhoto();
+        }
+        return "";
+    }
+
+    private String statusMark(TimelineItem item) {
+        if (TimelineItem.STATUS_DONE.equals(item.getStatus())) return "●";
+        if (TimelineItem.STATUS_SKIPPED.equals(item.getStatus())) return "○";
+        return "◌";
+    }
+
+    private String statusText(TimelineItem item) {
+        if (TimelineItem.STATUS_DONE.equals(item.getStatus())) return "已完成";
+        if (TimelineItem.STATUS_SKIPPED.equals(item.getStatus())) return "未完成";
+        return "待定";
+    }
+
+    private String typeLabel(String type) {
+        if (TimelineItem.TYPE_SPOT.equals(type)) return "景点";
+        if (TimelineItem.TYPE_FOOD.equals(type)) return "美食";
+        if (TimelineItem.TYPE_TRANSPORT.equals(type)) return "交通";
+        if (TimelineItem.TYPE_SHOPPING.equals(type)) return "购物";
+        if (TimelineItem.TYPE_HOTEL.equals(type)) return "住宿";
+        return "其他";
+    }
+
+    private String memoryKindLabel(TimelineItem item) {
+        if (item.isExtraCheckin()) return "临时打卡";
+        if (item.isPendingPlan()) return "待定计划";
+        return "具体计划";
+    }
+
+    private String join(List<String> values, String separator) {
         StringBuilder builder = new StringBuilder();
         for (String value : values) {
             if (builder.length() > 0) builder.append(separator);
@@ -1179,85 +815,148 @@ public class TripReportActivity extends AppCompatActivity {
         return builder.toString();
     }
 
-    private boolean isUsablePath(String path) {
-        return !isBlank(path) && new File(path).exists();
-    }
-
-    private boolean hasReportContent(List<DayRecord> dayRecords, List<Photo> photos, List<Spot> spots,
-                                     List<Expense> expenses, List<PrePlan> plans, List<RegretItem> regrets) {
-        return !dayRecords.isEmpty()
-                || !photos.isEmpty()
-                || !spots.isEmpty()
-                || !expenses.isEmpty()
-                || !plans.isEmpty()
-                || !regrets.isEmpty();
-    }
-
-    private boolean hasAnyTimelineContent(List<TimelineDay> days) {
-        for (TimelineDay day : days) {
-            if (!day.records.isEmpty() || !day.photos.isEmpty() || !day.spots.isEmpty() || !day.expenses.isEmpty()) {
-                return true;
+    private String maxKey(LinkedHashMap<String, Double> values) {
+        String bestKey = "";
+        double bestValue = 0;
+        for (Map.Entry<String, Double> entry : values.entrySet()) {
+            if (isBlank(bestKey) || entry.getValue() > bestValue) {
+                bestKey = entry.getKey();
+                bestValue = entry.getValue();
             }
         }
-        return false;
+        return bestKey;
     }
 
-    private List<TimelineDay> limitTimelineDaysForExport(List<TimelineDay> days) {
-        ArrayList<TimelineDay> limited = new ArrayList<>();
-        for (TimelineDay day : days) {
-            if (limited.size() >= MAX_TEMPLATE_TIMELINE_DAYS) break;
-            limited.add(day);
+    private String money(double amount) {
+        return String.format(Locale.getDefault(), "¥ %.2f", amount);
+    }
+
+    private void showImagePreview(String imagePath) {
+        ImageView preview = new ImageView(this);
+        preview.setAdjustViewBounds(true);
+        preview.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        preview.setPadding(dp(8), dp(8), dp(8), dp(8));
+        ImageUtils.displayLocalImage(preview, imagePath, R.drawable.travel_placeholder);
+        new AlertDialog.Builder(this)
+                .setView(preview)
+                .setPositiveButton("关闭", null)
+                .show();
+    }
+
+    private void toggleNote(TextView note, String fullText) {
+        Object expanded = note.getTag();
+        if (Boolean.TRUE.equals(expanded)) {
+            note.setText(trimText(fullText, 54));
+            note.setTag(false);
+        } else {
+            note.setText(fullText);
+            note.setTag(true);
         }
-        return limited;
     }
 
-    private void drawExportSummaryBadge(Canvas canvas, Paint paint, int photoCount, int diaryCount, int spotCount) {
-        RectF badge = new RectF(724, 48, 1008, 96);
-        paint.setColor(Color.rgb(238, 242, 237));
-        canvas.drawRoundRect(badge, dp(18), dp(18), paint);
-        paint.setColor(Color.rgb(47, 83, 85));
-        paint.setTextSize(22);
-        paint.setTypeface(Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD));
-        paint.setTextAlign(Paint.Align.CENTER);
-        canvas.drawText("分享摘要 · " + photoCount + "/" + diaryCount + "/" + spotCount, badge.centerX(), 80, paint);
-        paint.setTextAlign(Paint.Align.LEFT);
-    }
-
-    private void animateReportSections() {
-        setupScrollRevealSections();
-    }
-
-    private void setupScrollRevealSections() {
-        revealedSections.clear();
-        for (int i = 0; i < layoutReportCapture.getChildCount(); i++) {
-            View child = layoutReportCapture.getChildAt(i);
-            child.setAlpha(0f);
-            child.setTranslationY(dp(24));
-        }
-        scrollTripReport.getViewTreeObserver().addOnScrollChangedListener(this::revealVisibleSections);
-        scrollTripReport.post(this::revealVisibleSections);
-    }
-
-    private void revealVisibleSections() {
-        for (int i = 0; i < layoutReportCapture.getChildCount(); i++) {
-            View section = layoutReportCapture.getChildAt(i);
-            if (revealedSections.contains(section)) continue;
-            if (isSectionInRevealRange(section)) {
-                revealedSections.add(section);
-                section.animate()
-                        .alpha(1f)
-                        .translationY(0f)
-                        .setDuration(280L)
-                        .start();
+    private void saveReportImage() {
+        try {
+            Bitmap bitmap = renderReportBitmap();
+            saveBitmapToReportCache(bitmap);
+            Uri savedUri = saveBitmapToSystemAlbum(bitmap);
+            bitmap.recycle();
+            if (savedUri != null) {
+                Toast.makeText(this, "已保存到相册", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "保存失败：无法写入系统相册", Toast.LENGTH_SHORT).show();
             }
+        } catch (Exception e) {
+            Toast.makeText(this, "保存失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
 
-    private boolean isSectionInRevealRange(View section) {
-        int scrollTop = scrollTripReport.getScrollY();
-        int scrollBottom = scrollTop + scrollTripReport.getHeight();
-        int triggerBottom = scrollBottom - dp(36);
-        return section.getTop() < triggerBottom && section.getBottom() > scrollTop;
+    private void saveBitmapToReportCache(Bitmap bitmap) throws Exception {
+        File dir = new File(getCacheDir(), "reports");
+        if (!dir.exists()) dir.mkdirs();
+        generatedReportFile = new File(dir, "timeline_report_" + tripId + ".png");
+        FileOutputStream outputStream = new FileOutputStream(generatedReportFile);
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream);
+        outputStream.flush();
+        outputStream.close();
+    }
+
+    private Uri saveBitmapToSystemAlbum(Bitmap bitmap) throws Exception {
+        String filename = "TravelMemory_Report_" + tripId + "_" + System.currentTimeMillis() + ".png";
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            ContentValues values = new ContentValues();
+            values.put(MediaStore.Images.Media.DISPLAY_NAME, filename);
+            values.put(MediaStore.Images.Media.MIME_TYPE, "image/png");
+            values.put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/TravelMemory");
+            values.put(MediaStore.Images.Media.IS_PENDING, 1);
+            Uri uri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+            if (uri == null) return null;
+            OutputStream outputStream = getContentResolver().openOutputStream(uri);
+            if (outputStream == null) return null;
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream);
+            outputStream.flush();
+            outputStream.close();
+            values.clear();
+            values.put(MediaStore.Images.Media.IS_PENDING, 0);
+            getContentResolver().update(uri, values, null, null);
+            return uri;
+        }
+        String url = MediaStore.Images.Media.insertImage(getContentResolver(), bitmap, filename, "TravelMemory 旅行报告");
+        return isBlank(url) ? null : Uri.parse(url);
+    }
+
+    private void shareReportImage() {
+        if (generatedReportFile == null || !generatedReportFile.exists()) {
+            saveReportImage();
+        }
+        if (generatedReportFile == null || !generatedReportFile.exists()) return;
+        try {
+            Uri uri = FileProvider.getUriForFile(this, "com.example.fileprovider", generatedReportFile);
+            Intent intent = new Intent(Intent.ACTION_SEND);
+            intent.setType("image/png");
+            intent.putExtra(Intent.EXTRA_STREAM, uri);
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            startActivity(Intent.createChooser(intent, "分享旅行报告"));
+        } catch (Exception e) {
+            Toast.makeText(this, "报告分享失败", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private Bitmap renderReportBitmap() {
+        revealAllReportCardsForExport();
+        int width = Math.max(layoutReportCapture.getWidth(), getResources().getDisplayMetrics().widthPixels);
+        int widthSpec = View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY);
+        int heightSpec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
+        layoutReportCapture.measure(widthSpec, heightSpec);
+        int height = Math.max(layoutReportCapture.getMeasuredHeight(), scrollTripReport.getHeight());
+        layoutReportCapture.layout(0, 0, width, height);
+        Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+        layoutReportCapture.draw(canvas);
+        return bitmap;
+    }
+
+    private void revealAllReportCardsForExport() {
+        for (View view : pendingRevealViews) {
+            view.animate().cancel();
+            view.setAlpha(1f);
+            view.setTranslationY(0f);
+            view.setScaleX(1f);
+            view.setScaleY(1f);
+        }
+        pendingRevealViews.clear();
+        layoutReportCapture.animate().cancel();
+        layoutReportCapture.setAlpha(1f);
+        layoutReportCapture.setTranslationY(0f);
+    }
+
+    private void setupCoverParallax() {
+        scrollTripReport.getViewTreeObserver().addOnScrollChangedListener(() -> {
+            int scrollY = scrollTripReport.getScrollY();
+            ivReportCover.setTranslationY(scrollY * 0.10f);
+            ivReportCover.setScaleX(1f + Math.min(0.035f, scrollY / 9000f));
+            ivReportCover.setScaleY(1f + Math.min(0.035f, scrollY / 9000f));
+            revealVisibleReportCards();
+        });
     }
 
     private LinearLayout createCard() {
@@ -1265,7 +964,19 @@ public class TripReportActivity extends AppCompatActivity {
         card.setOrientation(LinearLayout.VERTICAL);
         card.setPadding(dp(16), dp(16), dp(16), dp(16));
         card.setBackground(ContextCompat.getDrawable(this, R.drawable.card_rounded_white));
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        params.setMargins(0, 0, 0, dp(14));
+        card.setLayoutParams(params);
+        applyPressFeedback(card);
         return card;
+    }
+
+    private LinearLayout createDayBlock() {
+        LinearLayout block = createCard();
+        block.setPadding(dp(14), dp(16), dp(14), dp(16));
+        return block;
     }
 
     private LinearLayout createSoftBlock() {
@@ -1276,55 +987,39 @@ public class TripReportActivity extends AppCompatActivity {
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT);
-        params.setMargins(0, dp(10), 0, 0);
+        params.setMargins(dp(28), dp(12), 0, 0);
         block.setLayoutParams(params);
         return block;
     }
 
-    private TextView sectionTitle(String text) {
-        TextView view = new TextView(this);
-        view.setText(text);
-        view.setTextColor(ContextCompat.getColor(this, R.color.text_primary));
-        view.setTextSize(18);
-        view.setTypeface(null, Typeface.BOLD);
-        return view;
+    private LinearLayout createTimelineCard() {
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setPadding(dp(14), dp(12), dp(14), dp(14));
+        card.setBackground(rounded(Color.WHITE, dp(16), ContextCompat.getColor(this, R.color.divider)));
+        applyPressFeedback(card);
+        return card;
     }
 
-    private TextView chapterEyebrow(String text) {
-        TextView view = new TextView(this);
-        view.setText(text);
-        view.setTextColor(ContextCompat.getColor(this, R.color.primary_dark));
-        view.setTextSize(12);
-        view.setTypeface(null, Typeface.BOLD);
-        view.setPadding(0, 0, 0, dp(6));
-        return view;
-    }
+    private View albumPhotoCard(String imagePath, int index) {
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setPadding(0, 0, 0, dp(10));
+        card.setBackground(rounded(Color.WHITE, dp(18), ContextCompat.getColor(this, R.color.divider)));
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dp(210), LinearLayout.LayoutParams.WRAP_CONTENT);
+        params.setMargins(0, 0, dp(12), 0);
+        card.setLayoutParams(params);
+        applyPressFeedback(card);
 
-    private TextView subtitle(String text) {
-        TextView view = new TextView(this);
-        view.setText(text);
-        view.setTextColor(ContextCompat.getColor(this, R.color.primary_dark));
-        view.setTextSize(15);
-        view.setTypeface(null, Typeface.BOLD);
-        view.setPadding(0, dp(12), 0, dp(4));
-        return view;
-    }
+        ImageView image = new ImageView(this);
+        image.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        ImageUtils.displayLocalImage(image, imagePath, R.drawable.travel_placeholder);
+        card.addView(image, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(150)));
 
-    private TextView bodyText(String text) {
-        TextView view = new TextView(this);
-        view.setText(text);
-        view.setTextColor(ContextCompat.getColor(this, R.color.text_primary));
-        view.setTextSize(14);
-        view.setLineSpacing(dp(2), 1f);
-        view.setPadding(0, dp(6), 0, 0);
-        return view;
-    }
-
-    private TextView hintText(String text) {
-        TextView view = bodyText(text);
-        view.setTextColor(ContextCompat.getColor(this, R.color.text_secondary));
-        view.setTextSize(13);
-        return view;
+        TextView caption = captionText("照片 " + (index + 1));
+        caption.setPadding(dp(12), dp(8), dp(12), 0);
+        card.addView(caption);
+        return card;
     }
 
     private View statBlock(String label, String value) {
@@ -1339,8 +1034,9 @@ public class TripReportActivity extends AppCompatActivity {
         params.setMargins(dp(4), dp(10), dp(4), 0);
         block.setLayoutParams(params);
         block.setBackground(ContextCompat.getDrawable(this, R.drawable.card_rounded_primary_light));
-        block.addView(hintText(label));
+        block.addView(captionText(label));
         TextView valueView = bodyText(value);
+        valueView.setGravity(Gravity.CENTER);
         valueView.setTextColor(ContextCompat.getColor(this, R.color.primary_dark));
         valueView.setTextSize(18);
         valueView.setTypeface(null, Typeface.BOLD);
@@ -1348,91 +1044,153 @@ public class TripReportActivity extends AppCompatActivity {
         return block;
     }
 
-    private View highlightRow(String label, String value) {
-        LinearLayout row = createSoftBlock();
-        row.addView(subtitle(label));
-        row.addView(bodyText(value));
-        return row;
+    private GradientDrawable rounded(int color, int radius, int strokeColor) {
+        GradientDrawable drawable = new GradientDrawable();
+        drawable.setColor(color);
+        drawable.setCornerRadius(radius);
+        drawable.setStroke(dp(1), strokeColor);
+        return drawable;
     }
 
-    private void addMatchedPhoto(LinearLayout item, DayRecord record, List<Photo> photos) {
-        Photo photo = null;
-        for (Photo candidate : photos) {
-            if (candidate.getDayRecordId() == record.getId()) {
-                photo = candidate;
-                break;
+    private void addAnimatedCard(LinearLayout container, View card, int index) {
+        container.addView(card);
+        prepareReveal(card);
+        card.postDelayed(this::revealVisibleReportCards, 40L * Math.max(0, index));
+    }
+
+    private void animateView(View view, int index) {
+        view.setAlpha(0f);
+        view.setTranslationY(dp(18));
+        view.setScaleX(0.985f);
+        view.setScaleY(0.985f);
+        view.animate()
+                .alpha(1f)
+                .translationY(0f)
+                .scaleX(1f)
+                .scaleY(1f)
+                .setStartDelay(60L * Math.max(0, index))
+                .setDuration(260)
+                .start();
+    }
+
+    private void prepareReveal(View view) {
+        view.setAlpha(0f);
+        view.setTranslationY(dp(40));
+        view.setScaleX(0.94f);
+        view.setScaleY(0.94f);
+        if (!pendingRevealViews.contains(view)) {
+            pendingRevealViews.add(view);
+        }
+    }
+
+    private void revealVisibleReportCards() {
+        if (pendingRevealViews.isEmpty() || scrollTripReport == null) return;
+        int scrollY = scrollTripReport.getScrollY();
+        int triggerBottom = scrollY + scrollTripReport.getHeight() - dp(48);
+        for (int i = pendingRevealViews.size() - 1; i >= 0; i--) {
+            View view = pendingRevealViews.get(i);
+            if (view.getTop() <= triggerBottom) {
+                pendingRevealViews.remove(i);
+                view.animate()
+                        .alpha(1f)
+                        .translationY(0f)
+                        .scaleX(1f)
+                        .scaleY(1f)
+                        .setDuration(380)
+                        .start();
             }
         }
-        if (photo == null && !photos.isEmpty()) {
-            photo = photos.get(0);
-        }
-        if (photo == null) return;
-        ImageView imageView = new ImageView(this);
-        imageView.setLayoutParams(new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                dp(150)));
-        imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
-        imageView.setContentDescription("时间线照片");
-        ImageUtils.displayLocalImage(imageView, photo.getImagePath(), R.drawable.travel_placeholder);
-        item.addView(imageView);
     }
 
-    private String namesForDate(List<Spot> spots, String date, String emptyText) {
-        StringBuilder builder = new StringBuilder();
-        for (Spot spot : spots) {
-            if (date != null && date.equals(spot.getCreatedAt())) {
-                if (builder.length() > 0) builder.append("、");
-                builder.append(spot.getName());
+    private void animatePageEnter() {
+        layoutReportCapture.setAlpha(0f);
+        layoutReportCapture.setTranslationY(dp(24));
+        layoutReportCapture.animate()
+                .alpha(1f)
+                .translationY(0f)
+                .setDuration(280)
+                .start();
+    }
+
+    private void finishWithTransition() {
+        layoutReportCapture.animate()
+                .alpha(0f)
+                .translationY(dp(12))
+                .setDuration(160)
+                .withEndAction(() -> {
+                    finish();
+                    overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
+                })
+                .start();
+    }
+
+    @Override
+    public void finish() {
+        super.finish();
+        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
+    }
+
+    private void applyPressFeedback(View view) {
+        android.util.TypedValue outValue = new android.util.TypedValue();
+        getTheme().resolveAttribute(android.R.attr.selectableItemBackground, outValue, true);
+        view.setForeground(ContextCompat.getDrawable(this, outValue.resourceId));
+        view.setClickable(true);
+        view.setFocusable(true);
+        view.setOnTouchListener((target, event) -> {
+            if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                target.animate().scaleX(0.985f).scaleY(0.985f).setDuration(80).start();
+            } else if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
+                target.animate().scaleX(1f).scaleY(1f).setDuration(120).start();
             }
-        }
-        return builder.length() == 0 ? emptyText : builder.toString();
+            return false;
+        });
     }
 
-    private double expenseForDate(List<Expense> expenses, String date) {
-        double total = 0;
-        for (Expense expense : expenses) {
-            if (date != null && date.equals(expense.getDate())) {
-                total += expense.getAmount();
-            }
-        }
-        return total;
+    private TextView sectionTitle(String text) {
+        TextView view = new TextView(this);
+        view.setText(text);
+        view.setTextColor(ContextCompat.getColor(this, R.color.text_primary));
+        view.setTextSize(20);
+        view.setTypeface(null, Typeface.BOLD);
+        return view;
     }
 
-    private double totalExpense(List<Expense> expenses) {
-        double total = 0;
-        for (Expense expense : expenses) {
-            total += expense.getAmount();
-        }
-        return total;
+    private TextView subtitle(String text) {
+        TextView view = new TextView(this);
+        view.setText(text);
+        view.setTextColor(ContextCompat.getColor(this, R.color.text_primary));
+        view.setTextSize(16);
+        view.setTypeface(null, Typeface.BOLD);
+        return view;
     }
 
-    private String favoriteSpotName(List<Spot> spots) {
-        for (Spot spot : spots) {
-            if (spot.getIsFavorite() == 1) return spot.getName();
-        }
-        return spots.isEmpty() ? "还没有地点记录" : spots.get(0).getName();
+    private TextView bodyText(String text) {
+        TextView view = new TextView(this);
+        view.setText(text);
+        view.setTextColor(ContextCompat.getColor(this, R.color.text_primary));
+        view.setTextSize(14);
+        view.setLineSpacing(dp(2), 1f);
+        view.setPadding(0, dp(8), 0, 0);
+        return view;
     }
 
-    private String moodSuffix(DayRecord record) {
-        if (record == null || isBlank(record.getMood())) return "";
-        return isBlank(record.getMood()) ? "" : " · " + record.getMood();
+    private TextView captionText(String text) {
+        TextView view = new TextView(this);
+        view.setText(text);
+        view.setTextColor(ContextCompat.getColor(this, R.color.text_secondary));
+        view.setTextSize(13);
+        view.setLineSpacing(dp(2), 1f);
+        view.setPadding(0, dp(6), 0, 0);
+        return view;
     }
 
-    private String noteSuffix(String note) {
-        return isBlank(note) ? "" : "，" + note;
-    }
-
-    private String money(double amount) {
-        return String.format(Locale.getDefault(), "¥ %.2f", amount);
+    private String trimText(String text, int limit) {
+        if (isBlank(text) || text.length() <= limit) return fallback(text, "");
+        return text.substring(0, Math.max(0, limit - 1)) + "...";
     }
 
     private String fallback(String value, String fallback) {
         return isBlank(value) ? fallback : value;
-    }
-
-    private String shortText(String value, int maxLength, String fallback) {
-        if (isBlank(value)) return fallback;
-        return value.length() <= maxLength ? value : value.substring(0, maxLength) + "...";
     }
 
     private boolean isBlank(String value) {

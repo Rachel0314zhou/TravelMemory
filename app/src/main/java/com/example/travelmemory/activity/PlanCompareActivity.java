@@ -49,19 +49,22 @@ public class PlanCompareActivity extends AppCompatActivity {
         rvRegrets.setLayoutManager(new LinearLayoutManager(this));
 
         findViewById(R.id.btn_compare_back).setOnClickListener(v -> finish());
-        dbHelper.generateRegretsForTrip(tripId);
         loadCompareData();
     }
 
     private void loadCompareData() {
+        dbHelper.syncReviewDataForTrip(tripId);
         int total = dbHelper.countPrePlansForTrip(tripId);
         int completed = dbHelper.countCompletedPrePlansForTrip(tripId);
-        int unfinished = Math.max(total - completed, 0);
+        int timelineTotal = dbHelper.countTimelineItemsForTrip(tripId);
+        int timelineCompleted = dbHelper.countDoneTimelineItemsForTrip(tripId);
+        int unfinished = Math.max(total - completed, 0) + Math.max(timelineTotal - timelineCompleted, 0);
         int rate = dbHelper.getPlanCompletionRate(tripId);
         int regretCount = dbHelper.countRegretsForTrip(tripId);
-        tvSummary.setText("原计划 " + total + " 项，已完成 " + completed + " 项"
-                + "\n这次没来得及完成 " + unfinished + " 项，完成率 " + rate + "%"
-                + "\n已自动整理遗憾回顾 " + regretCount + " 条");
+        tvSummary.setText("行前计划 " + completed + " / " + total
+                + "\n当日计划 " + timelineCompleted + " / " + timelineTotal
+                + "\n结束旅行时有" + regretCount + " 条遗憾，未完成内容共 " + unfinished + " 项"
+                + "\n行前计划完成率 " + rate + "%");
 
         List<RegretItem> regrets = dbHelper.getRegretsForTrip(tripId);
         if (regrets.isEmpty()) {

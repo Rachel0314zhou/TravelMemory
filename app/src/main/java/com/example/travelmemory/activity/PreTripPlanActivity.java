@@ -1,30 +1,28 @@
 package com.example.travelmemory.activity;
 
 import android.app.AlertDialog;
-import android.app.DatePickerDialog;
-import android.app.TimePickerDialog;
 import android.os.Bundle;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
-import android.widget.CheckBox;
 import android.widget.EditText;
-import android.widget.HorizontalScrollView;
+import android.widget.GridLayout;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.TimePicker;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.R;
-import com.example.travelmemory.adapter.PrePlanAdapter;
 import com.example.travelmemory.db.DatabaseHelper;
-import com.example.travelmemory.model.PrePlan;
+import com.example.travelmemory.model.TimelineItem;
 import com.example.travelmemory.model.Trip;
 import com.example.travelmemory.utils.SessionManager;
-import com.example.travelmemory.utils.TripNavigator;
-import com.example.travelmemory.utils.TripStateManager;
 import com.example.travelmemory.utils.TravelConstants;
 
 import java.text.ParseException;
@@ -35,12 +33,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-public class PreTripPlanActivity extends AppCompatActivity implements PrePlanAdapter.Listener {
-
-    private static final String[] PLAN_TYPES = {"想去的地方", "想吃的美食", "想买的东西", "想做的事情", "其他"};
+public class PreTripPlanActivity extends AppCompatActivity {
 
     private DatabaseHelper dbHelper;
-    private TripStateManager tripStateManager;
     private SessionManager sessionManager;
     private int tripId = -1;
     private int currentUserId = -1;
@@ -50,7 +45,6 @@ public class PreTripPlanActivity extends AppCompatActivity implements PrePlanAda
     private TextView tvSummary;
     private TextView tvPendingTitle;
     private TextView tvPageTitle;
-    private Button btnSelectTrip;
     private LinearLayout layoutDayTabs;
     private final List<String> dayDates = new ArrayList<>();
     private int selectedDayIndex = 0;
@@ -61,13 +55,13 @@ public class PreTripPlanActivity extends AppCompatActivity implements PrePlanAda
         setContentView(R.layout.activity_pre_trip_plan);
 
         dbHelper = new DatabaseHelper(this);
-        tripStateManager = new TripStateManager(dbHelper);
         sessionManager = new SessionManager(this);
         currentUserId = sessionManager.getCurrentUserId();
         tripId = getIntent().getIntExtra(TravelConstants.EXTRA_TRIP_ID, -1);
+        selectedDayIndex = Math.max(0, getIntent().getIntExtra(TravelConstants.EXTRA_DAY_INDEX, 0));
 
         if (currentUserId <= 0) {
-            Toast.makeText(this, "请先选择自己的旅行", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "请先登录", Toast.LENGTH_SHORT).show();
             finish();
             return;
         }
@@ -75,7 +69,7 @@ public class PreTripPlanActivity extends AppCompatActivity implements PrePlanAda
         if (tripId <= 0 || !dbHelper.isTripOwnedByUser(tripId, currentUserId)) {
             List<Trip> trips = dbHelper.getTripsForUser(currentUserId);
             if (trips.isEmpty()) {
-                Toast.makeText(this, "暂无可选择的旅行", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "还没有可用旅行", Toast.LENGTH_SHORT).show();
                 finish();
                 return;
             }
@@ -88,79 +82,48 @@ public class PreTripPlanActivity extends AppCompatActivity implements PrePlanAda
         tvSummary = findViewById(R.id.tv_pre_plan_summary);
         tvPendingTitle = findViewById(R.id.tv_pre_plan_pending_title);
         tvPageTitle = findViewById(R.id.tv_pre_plan_page_title);
-        btnSelectTrip = findViewById(R.id.btn_pre_plan_select_trip);
         layoutDayTabs = findViewById(R.id.layout_pre_plan_day_tabs);
         rvPrePlans.setLayoutManager(new LinearLayoutManager(this));
         rvPendingPlans.setLayoutManager(new LinearLayoutManager(this));
 
         findViewById(R.id.btn_pre_plan_back).setOnClickListener(v -> finish());
-        btnSelectTrip.setOnClickListener(v -> showTripPicker());
-        findViewById(R.id.btn_skip_pre_trip).setOnClickListener(v -> {
-            tripStateManager.startTrip(tripId);
-            TripNavigator.openTripDetail(this, tripId, TravelConstants.MODE_DURING_TRIP);
-            finish();
-        });
+        findViewById(R.id.btn_add_pre_plan).setOnClickListener(v -> showTimelineDialog(null));
         renderDayTabs();
-        loadPlans();
+        loadTimelineItems();
     }
 
-    private void loadPlans() {
-        List<PrePlan> plans = dbHelper.getPrePlansForTripSorted(tripId);
-        renderPlansForSelectedDay(plans);
+    private void loadTimelineItems() {
+        List<TimelineItem> items = dbHelper.getTimelineItemsForTripDay(tripId, selectedDayIndex);
+        renderPlansForSelectedDay(items);
     }
 
-    private void renderPlansForSelectedDay(List<PrePlan> plans) {
-        List<PrePlan> dayPlans = new ArrayList<>();
-        List<PrePlan> pendingPlans = new ArrayList<>();
-        String selectedDate = selectedDate();
-        for (PrePlan plan : plans) {
-            if (!sameDay(plan.getTargetDate(), selectedDate)) continue;
-            if (plan.isPending()) {
-                pendingPlans.add(plan);
+    private void renderPlansForSelectedDay(List<TimelineItem> items) {
+        List<TimelineItem> dayItems = new ArrayList<>();
+        List<TimelineItem> pendingItems = new ArrayList<>();
+        for (TimelineItem item : items) {
+            if (TimelineItem.TIME_SLOT_PENDING.equals(item.getTimeSlot())) {
+                pendingItems.add(item);
             } else {
-                dayPlans.add(plan);
+                dayItems.add(item);
             }
         }
-        int total = plans.size();
-        int completed = dbHelper.countCompletedPrePlansForTrip(tripId);
-        tvSummary.setText("已完成 " + completed + " / " + total + "，完成率 " + dbHelper.getPlanCompletionRate(tripId) + "%");
+
+        int total = dbHelper.countTimelineItemsForTrip(tripId);
+        int done = dbHelper.countDoneTimelineItemsForTrip(tripId);
+        tvSummary.setText("已完成 " + done + " / " + total + "，完成率 " + dbHelper.getTimelineCompletionRate(tripId) + "%");
+
         Trip trip = dbHelper.getTripForUser(tripId, currentUserId);
         if (trip != null) {
             tvPageTitle.setText(trip.getName());
-            btnSelectTrip.setText("选择旅行：" + trip.getName());
         }
-        boolean hasAnyForDay = !dayPlans.isEmpty() || !pendingPlans.isEmpty();
-        tvEmpty.setVisibility(hasAnyForDay ? View.GONE : View.VISIBLE);
-        rvPrePlans.setVisibility(dayPlans.isEmpty() ? View.GONE : View.VISIBLE);
-        tvPendingTitle.setVisibility(pendingPlans.isEmpty() ? View.GONE : View.VISIBLE);
-        rvPendingPlans.setVisibility(pendingPlans.isEmpty() ? View.GONE : View.VISIBLE);
-        if (!dayPlans.isEmpty()) {
-            rvPrePlans.setAdapter(new PrePlanAdapter(this, dayPlans, this));
-        }
-        if (!pendingPlans.isEmpty()) {
-            rvPendingPlans.setAdapter(new PrePlanAdapter(this, pendingPlans, this));
-        }
-    }
 
-    private void showTripPicker() {
-        List<Trip> trips = dbHelper.getTripsForUser(currentUserId);
-        if (trips.isEmpty()) {
-            Toast.makeText(this, "暂无可选择的旅行", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        String[] names = new String[trips.size()];
-        for (int i = 0; i < trips.size(); i++) {
-            names[i] = trips.get(i).getName();
-        }
-        new AlertDialog.Builder(this)
-                .setTitle("选择旅行")
-                .setItems(names, (dialog, which) -> {
-                    tripId = trips.get(which).getId();
-                    selectedDayIndex = 0;
-                    renderDayTabs();
-                    loadPlans();
-                })
-                .show();
+        boolean hasAnyForDay = !dayItems.isEmpty() || !pendingItems.isEmpty();
+        tvEmpty.setVisibility(hasAnyForDay ? View.GONE : View.VISIBLE);
+        rvPrePlans.setVisibility(dayItems.isEmpty() ? View.GONE : View.VISIBLE);
+        tvPendingTitle.setVisibility(pendingItems.isEmpty() ? View.GONE : View.VISIBLE);
+        rvPendingPlans.setVisibility(pendingItems.isEmpty() ? View.GONE : View.VISIBLE);
+        rvPrePlans.setAdapter(new TimelineAdapter(dayItems));
+        rvPendingPlans.setAdapter(new TimelineAdapter(pendingItems));
     }
 
     private void renderDayTabs() {
@@ -171,9 +134,9 @@ public class PreTripPlanActivity extends AppCompatActivity implements PrePlanAda
         dayDates.addAll(buildTripDates(trip));
         for (int i = 0; i < dayDates.size(); i++) {
             TextView dayTab = new TextView(this);
-            dayTab.setText("Day " + (i + 1));
+            dayTab.setText("Day " + (i + 1) + "\n" + shortDate(dayDates.get(i)));
             dayTab.setTextSize(14);
-            dayTab.setGravity(android.view.Gravity.CENTER);
+            dayTab.setGravity(Gravity.CENTER);
             dayTab.setPadding(dp(16), 0, dp(16), 0);
             dayTab.setTextColor(i == selectedDayIndex ? getColor(R.color.white) : getColor(R.color.primary));
             dayTab.setBackgroundResource(i == selectedDayIndex ? R.drawable.btn_primary : R.drawable.btn_secondary);
@@ -184,10 +147,175 @@ public class PreTripPlanActivity extends AppCompatActivity implements PrePlanAda
             dayTab.setOnClickListener(v -> {
                 selectedDayIndex = index;
                 renderDayTabs();
-                loadPlans();
+                loadTimelineItems();
             });
             layoutDayTabs.addView(dayTab);
         }
+    }
+
+    private void showTimelineDialog(TimelineItem editingItem) {
+        PlanForm form = createPlanForm(editingItem);
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle(editingItem == null ? "添加行前计划" : "编辑行前计划")
+                .setView(scrollableDialogView(form.root))
+                .setPositiveButton("保存", null)
+                .setNegativeButton("取消", null)
+                .create();
+        dialog.setOnShowListener(d -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            String title = form.etTitle.getText().toString().trim();
+            if (title.isEmpty()) {
+                Toast.makeText(this, "请先填写计划标题或内容", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            TimelineItem item = editingItem == null ? new TimelineItem() : editingItem;
+            item.setTripId(tripId);
+            item.setDayIndex(selectedDayIndex);
+            item.setTitle(title);
+            item.setType(form.selectedType);
+            item.setTimeSlot(formatPickedTime(form.timePicker));
+            item.setStatus(TimelineItem.STATUS_PLANNED);
+            item.setCreatedAt(todayText());
+            if (editingItem == null) {
+                dbHelper.addTimelineItem(item);
+            } else {
+                dbHelper.updateTimelineItem(item);
+            }
+            loadTimelineItems();
+            dialog.dismiss();
+        }));
+        dialog.show();
+    }
+
+    private PlanForm createPlanForm(TimelineItem editingItem) {
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        int padding = dp(16);
+        layout.setPadding(padding, padding, padding, dp(8));
+
+        layout.addView(stepTitle("步骤 1  先写计划内容"));
+        layout.addView(stepHint("用一句话写清楚要做什么，例如：上午去鼓浪屿。"));
+
+        EditText etTitle = new EditText(this);
+        etTitle.setHint("例如：晚上吃沙茶面");
+        etTitle.setSingleLine(false);
+        etTitle.setMinLines(1);
+        etTitle.setTextColor(ContextCompat.getColor(this, R.color.text_primary));
+        etTitle.setHintTextColor(ContextCompat.getColor(this, R.color.text_hint));
+        layout.addView(etTitle);
+
+        layout.addView(stepTitle("步骤 2  再选择计划类型"));
+        layout.addView(stepHint("请选择计划类型，便于后续按分类查看。"));
+
+        PlanForm form = new PlanForm(layout, etTitle);
+        String initialType = TimelineItem.TYPE_SPOT;
+        if (editingItem != null) {
+            etTitle.setText(editingItem.getTitle());
+            initialType = editingItem.getType();
+        }
+        layout.addView(createTypeGrid(form, initialType));
+
+        layout.addView(stepTitle("步骤 3  最后选择计划时间"));
+        layout.addView(stepHint("通过滑动时间选择器确定具体时间，避免手动输入格式错误。"));
+        TimePicker timePicker = new TimePicker(this);
+        timePicker.setIs24HourView(true);
+        applyInitialTime(timePicker, editingItem == null ? null : editingItem.getTimeSlot());
+        form.timePicker = timePicker;
+        layout.addView(timePicker);
+        return form;
+    }
+
+    private TextView stepTitle(String text) {
+        TextView view = new TextView(this);
+        view.setText(text);
+        view.setTextSize(15);
+        view.setTextColor(ContextCompat.getColor(this, R.color.text_primary));
+        view.setTypeface(null, android.graphics.Typeface.BOLD);
+        view.setPadding(0, dp(18), 0, dp(4));
+        return view;
+    }
+
+    private TextView stepHint(String text) {
+        TextView view = new TextView(this);
+        view.setText(text);
+        view.setTextSize(13);
+        view.setTextColor(ContextCompat.getColor(this, R.color.text_secondary));
+        view.setPadding(0, 0, 0, dp(8));
+        return view;
+    }
+
+    private ScrollView scrollableDialogView(View content) {
+        ScrollView scrollView = new ScrollView(this);
+        scrollView.setFillViewport(false);
+        scrollView.setVerticalScrollBarEnabled(true);
+        scrollView.setOverScrollMode(View.OVER_SCROLL_IF_CONTENT_SCROLLS);
+        scrollView.addView(content, new ScrollView.LayoutParams(
+                ScrollView.LayoutParams.MATCH_PARENT,
+                ScrollView.LayoutParams.WRAP_CONTENT));
+        return scrollView;
+    }
+
+    private GridLayout createTypeGrid(PlanForm form, String initialType) {
+        GridLayout grid = new GridLayout(this);
+        grid.setColumnCount(3);
+        String[] types = new String[]{
+                TimelineItem.TYPE_SPOT,
+                TimelineItem.TYPE_FOOD,
+                TimelineItem.TYPE_TRANSPORT,
+                TimelineItem.TYPE_SHOPPING,
+                TimelineItem.TYPE_HOTEL,
+                TimelineItem.TYPE_OTHER
+        };
+        for (String type : types) {
+            Button button = new Button(this);
+            button.setText(type);
+            button.setAllCaps(false);
+            button.setTextSize(14);
+            GridLayout.LayoutParams params = new GridLayout.LayoutParams();
+            params.width = 0;
+            params.height = dp(44);
+            params.columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f);
+            params.setMargins(0, dp(4), dp(8), dp(4));
+            button.setLayoutParams(params);
+            button.setOnClickListener(v -> {
+                form.selectedType = type;
+                refreshTypeButtons(form);
+            });
+            form.typeButtons.add(button);
+            grid.addView(button);
+        }
+        form.selectedType = initialType;
+        refreshTypeButtons(form);
+        return grid;
+    }
+
+    private void refreshTypeButtons(PlanForm form) {
+        for (Button button : form.typeButtons) {
+            boolean selected = button.getText().toString().equals(form.selectedType);
+            button.setBackground(ContextCompat.getDrawable(this, selected ? R.drawable.btn_primary : R.drawable.btn_secondary));
+            button.setTextColor(ContextCompat.getColor(this, selected ? R.color.white : R.color.primary));
+        }
+    }
+
+    private void applyInitialTime(TimePicker timePicker, String time) {
+        int hour = 9;
+        int minute = 0;
+        if (time != null && time.matches("\\d{2}:\\d{2}")) {
+            hour = Integer.parseInt(time.substring(0, 2));
+            minute = Integer.parseInt(time.substring(3, 5));
+        }
+        timePicker.setHour(hour);
+        timePicker.setMinute(minute);
+    }
+
+    private String formatPickedTime(TimePicker timePicker) {
+        return String.format(Locale.CHINA, "%02d:%02d", timePicker.getHour(), timePicker.getMinute());
+    }
+
+    private String statusText(TimelineItem item) {
+        if (TimelineItem.STATUS_DONE.equals(item.getStatus())) return "已完成";
+        if (TimelineItem.STATUS_SKIPPED.equals(item.getStatus())) return "已跳过";
+        return "已计划";
     }
 
     private List<String> buildTripDates(Trip trip) {
@@ -212,194 +340,91 @@ public class PreTripPlanActivity extends AppCompatActivity implements PrePlanAda
         return dates;
     }
 
-    private String selectedDate() {
-        if (dayDates.isEmpty()) return "";
-        int safeIndex = Math.max(0, Math.min(selectedDayIndex, dayDates.size() - 1));
-        return dayDates.get(safeIndex);
+    private String shortDate(String date) {
+        if (date == null || date.length() < 10) return "日期";
+        return date.substring(5);
     }
 
-    private boolean sameDay(String planDate, String selectedDate) {
-        if (selectedDate == null || selectedDate.isEmpty()) return true;
-        return selectedDate.equals(planDate);
+    private String todayText() {
+        return new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.CHINA).format(Calendar.getInstance().getTime());
     }
 
     private int dp(int value) {
-        return (int) (value * getResources().getDisplayMetrics().density + 0.5f);
+        return Math.round(value * getResources().getDisplayMetrics().density);
     }
 
-    private void showTypePicker() {
-        new AlertDialog.Builder(this)
-                .setTitle("选择计划类型")
-                .setItems(PLAN_TYPES, (dialog, which) -> showPlanDialog(null, PLAN_TYPES[which]))
-                .show();
-    }
+    private class TimelineAdapter extends RecyclerView.Adapter<TimelineAdapter.TimelineViewHolder> {
+        private final List<TimelineItem> items;
 
-    private void showPlanDialog(PrePlan editingPlan, String type) {
-        LinearLayout layout = new LinearLayout(this);
-        layout.setOrientation(LinearLayout.VERTICAL);
-        int padding = (int) (16 * getResources().getDisplayMetrics().density);
-        layout.setPadding(padding, padding, padding, 0);
-
-        EditText etTitle = new EditText(this);
-        etTitle.setHint(getTitleHint(type));
-        layout.addView(etTitle);
-
-        EditText etLocation = new EditText(this);
-        etLocation.setHint(getLocationHint(type));
-        layout.addView(etLocation);
-
-        EditText etDate = new EditText(this);
-        etDate.setHint("计划日期");
-        etDate.setFocusable(false);
-        etDate.setOnClickListener(v -> showDatePicker(etDate));
-        layout.addView(etDate);
-
-        TextView etTime = new TextView(this);
-        etTime.setHint("计划时间，如 09:30");
-        etTime.setTextSize(16);
-        etTime.setPadding(0, padding / 2, 0, padding / 2);
-        etTime.setOnClickListener(v -> showTimePicker(etTime));
-        layout.addView(etTime);
-
-        EditText etNote = new EditText(this);
-        etNote.setHint("备注");
-        layout.addView(etNote);
-
-        CheckBox cbPending = new CheckBox(this);
-        cbPending.setText("设为待定");
-        layout.addView(cbPending);
-
-        if (editingPlan != null) {
-            etTitle.setText(editingPlan.getTitle());
-            etLocation.setText(editingPlan.getLocation());
-            etDate.setText(editingPlan.getTargetDate());
-            etTime.setText(editingPlan.getTimeText());
-            etNote.setText(editingPlan.getNote());
-            cbPending.setChecked(editingPlan.isPending());
+        TimelineAdapter(List<TimelineItem> items) {
+            this.items = items;
         }
 
-        new AlertDialog.Builder(this)
-                .setTitle(editingPlan == null ? "添加计划" : "编辑计划")
-                .setView(layout)
-                .setPositiveButton("保存", (dialog, which) -> {
-                    String title = etTitle.getText().toString().trim();
-                    if (title.isEmpty()) {
-                        Toast.makeText(this, "请填写" + getRequiredName(type), Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-                    PrePlan plan = editingPlan == null ? new PrePlan() : editingPlan;
-                    plan.setTripId(tripId);
-                    plan.setType(type);
-                    plan.setTitle(title);
-                    plan.setLocation(etLocation.getText().toString().trim());
-                    plan.setTargetDate(etDate.getText().toString().trim());
-                    plan.setTimeText(normalizeTimeText(etTime.getText().toString()));
-                    plan.setNote(etNote.getText().toString().trim());
-                    plan.setStatus(cbPending.isChecked() ? PrePlan.STATUS_PENDING : PrePlan.STATUS_NORMAL);
-                    plan.setCreatedAt("2026-06-09");
-                    if (editingPlan == null) {
-                        plan.setIsCompleted(0);
-                        dbHelper.addPrePlan(plan);
-                    } else {
-                        dbHelper.updatePrePlan(plan);
-                    }
-                    loadPlans();
-                })
-                .setNegativeButton("取消", null)
-                .show();
-    }
+        @Override
+        public TimelineViewHolder onCreateViewHolder(android.view.ViewGroup parent, int viewType) {
+            LinearLayout root = new LinearLayout(PreTripPlanActivity.this);
+            root.setOrientation(LinearLayout.VERTICAL);
+            root.setPadding(dp(16), dp(12), dp(16), dp(12));
+            root.setBackground(ContextCompat.getDrawable(PreTripPlanActivity.this, R.drawable.card_rounded_white));
+            RecyclerView.LayoutParams params = new RecyclerView.LayoutParams(
+                    RecyclerView.LayoutParams.MATCH_PARENT,
+                    RecyclerView.LayoutParams.WRAP_CONTENT);
+            params.setMargins(dp(16), dp(6), dp(16), dp(6));
+            root.setLayoutParams(params);
 
-    private void showDatePicker(EditText target) {
-        Calendar calendar = Calendar.getInstance();
-        new DatePickerDialog(this, (view, year, month, dayOfMonth) -> {
-            String date = String.format(Locale.CHINA, "%04d-%02d-%02d", year, month + 1, dayOfMonth);
-            target.setText(date);
-        }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH)).show();
-    }
+            TextView title = new TextView(PreTripPlanActivity.this);
+            title.setTextSize(16);
+            title.setTextColor(ContextCompat.getColor(PreTripPlanActivity.this, R.color.text_primary));
+            title.setTypeface(null, android.graphics.Typeface.BOLD);
+            root.addView(title);
 
-    private void showTimePicker(TextView target) {
-        Calendar calendar = Calendar.getInstance();
-        new TimePickerDialog(this, (view, hourOfDay, minute) -> {
-            target.setText(String.format(Locale.CHINA, "%02d:%02d", hourOfDay, minute));
-        }, calendar.get(Calendar.HOUR_OF_DAY), calendar.get(Calendar.MINUTE), true).show();
-    }
+            TextView meta = new TextView(PreTripPlanActivity.this);
+            meta.setTextSize(13);
+            meta.setTextColor(ContextCompat.getColor(PreTripPlanActivity.this, R.color.text_secondary));
+            LinearLayout.LayoutParams metaParams = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT);
+            metaParams.setMargins(0, dp(6), 0, 0);
+            root.addView(meta, metaParams);
 
-    private String normalizeTimeText(String value) {
-        if (value == null) return "";
-        String trimmed = value.trim();
-        return trimmed.matches("\\d{2}:\\d{2}") ? trimmed : "";
-    }
+            return new TimelineViewHolder(root, title, meta);
+        }
 
-    private String getTitleHint(String type) {
-        switch (type) {
-            case "想去的地方":
-                return "地点名称";
-            case "想吃的美食":
-                return "美食名称";
-            case "想买的东西":
-                return "物品名称";
-            case "想做的事情":
-                return "事情名称";
-            default:
-                return "标题";
+        @Override
+        public void onBindViewHolder(TimelineViewHolder holder, int position) {
+            TimelineItem item = items.get(position);
+            holder.title.setText(item.getTitle());
+            holder.meta.setText(item.getTimeSlot() + " / " + item.getType() + " / " + statusText(item));
+            holder.itemView.setOnClickListener(v -> showTimelineDialog(item));
+        }
+
+        @Override
+        public int getItemCount() {
+            return items == null ? 0 : items.size();
+        }
+
+        class TimelineViewHolder extends RecyclerView.ViewHolder {
+            final TextView title;
+            final TextView meta;
+
+            TimelineViewHolder(View itemView, TextView title, TextView meta) {
+                super(itemView);
+                this.title = title;
+                this.meta = meta;
+            }
         }
     }
 
-    private String getLocationHint(String type) {
-        switch (type) {
-            case "想去的地方":
-                return "具体位置（选填）";
-            case "想吃的美食":
-                return "推荐店铺/地点（选填）";
-            case "想买的东西":
-                return "购买地点（选填）";
-            case "想做的事情":
-                return "发生地点（选填）";
-            default:
-                return "相关地点（选填）";
+    private static class PlanForm {
+        final LinearLayout root;
+        final EditText etTitle;
+        final List<Button> typeButtons = new ArrayList<>();
+        String selectedType = TimelineItem.TYPE_SPOT;
+        TimePicker timePicker;
+
+        PlanForm(LinearLayout root, EditText etTitle) {
+            this.root = root;
+            this.etTitle = etTitle;
         }
-    }
-
-    private String getRequiredName(String type) {
-        switch (type) {
-            case "想去的地方":
-                return "地点名称";
-            case "想吃的美食":
-                return "美食名称";
-            case "想买的东西":
-                return "物品名称";
-            case "想做的事情":
-                return "事情名称";
-            default:
-                return "标题";
-        }
-    }
-
-    @Override
-    public void onToggle(PrePlan plan, boolean completed) {
-        if (completed) {
-            dbHelper.completePrePlanAndSyncCheckIn(plan);
-        } else {
-            dbHelper.markPrePlanCompleted(plan.getId(), false);
-        }
-        loadPlans();
-    }
-
-    @Override
-    public void onEdit(PrePlan plan) {
-        showPlanDialog(plan, plan.getType());
-    }
-
-    @Override
-    public void onDelete(PrePlan plan) {
-        new AlertDialog.Builder(this)
-                .setTitle("删除计划")
-                .setMessage("确定删除“" + plan.getTitle() + "”吗？")
-                .setPositiveButton("确认删除", (dialog, which) -> {
-                    dbHelper.deletePrePlan(plan.getId());
-                    loadPlans();
-                })
-                .setNegativeButton("取消", null)
-                .show();
     }
 }

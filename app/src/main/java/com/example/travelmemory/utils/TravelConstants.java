@@ -4,7 +4,9 @@ public final class TravelConstants {
     public static final String EXTRA_TRIP_ID = "trip_id";
     public static final String EXTRA_TRIP_MODE = "trip_mode";
     public static final String EXTRA_RECORD_DATE = "record_date";
+    public static final String EXTRA_DAY_INDEX = "day_index";
     public static final String EXTRA_MODE = "mode";
+    public static final String EXTRA_REPORT_OPENED_AT = "report_opened_at";
 
     /**
      * Page entry modes. These describe which feature panel should open,

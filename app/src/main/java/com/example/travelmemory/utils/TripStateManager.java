@@ -22,6 +22,7 @@ public class TripStateManager {
 
     public void finishTrip(int tripId) {
         dbHelper.updateTripStatus(tripId, TravelConstants.TripState.REVIEWING);
+        dbHelper.syncReviewDataForTrip(tripId);
     }
 
     public boolean isPlanning(Trip trip) {

@@ -117,6 +117,8 @@ public class MainActivity extends AppCompatActivity {
             goToLogin();
             return;
         }
+        dbHelper.ensureCompleteDemoTripForUser(currentUser.getId());
+        currentUser = dbHelper.getCurrentUser(userId);
 
         String nickname = currentUser.getNickname() == null || currentUser.getNickname().isEmpty()
                 ? "旅行者" : currentUser.getNickname();

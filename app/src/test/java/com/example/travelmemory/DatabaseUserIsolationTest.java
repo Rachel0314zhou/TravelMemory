@@ -9,8 +9,12 @@ import androidx.test.core.app.ApplicationProvider;
 import com.example.travelmemory.db.DatabaseHelper;
 import com.example.travelmemory.model.PackingItem;
 import com.example.travelmemory.model.PrePlan;
+import com.example.travelmemory.model.RegretItem;
 import com.example.travelmemory.model.Spot;
+import com.example.travelmemory.model.TimelineItem;
 import com.example.travelmemory.model.Trip;
+import com.example.travelmemory.utils.TripStateManager;
+import com.example.travelmemory.utils.TravelConstants;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -135,6 +139,249 @@ public class DatabaseUserIsolationTest {
         assertEquals(1, dbHelper.getPrePlanById((int) planId).getIsCompleted());
     }
 
+    @Test
+    public void prePlansPersistDayIndexAndSortByTimeSectionWithinDay() {
+        int userId = (int) dbHelper.registerUser("daily_plan_user", "123456", "Daily Plan");
+        int tripId = (int) dbHelper.addTrip(createTrip(userId, "Daily Plan Trip", "Xiamen"));
+
+        PrePlan night = createPlan(tripId, 1, PrePlan.TIME_SECTION_EVENING, "Night walk");
+        PrePlan pending = createPlan(tripId, 1, PrePlan.TIME_SECTION_PENDING, "Buy postcard");
+        PrePlan morning = createPlan(tripId, 1, PrePlan.TIME_SECTION_MORNING, "Museum");
+        PrePlan afternoon = createPlan(tripId, 1, PrePlan.TIME_SECTION_AFTERNOON, "Coffee");
+        PrePlan otherDay = createPlan(tripId, 0, PrePlan.TIME_SECTION_MORNING, "Arrival");
+
+        dbHelper.addPrePlan(night);
+        dbHelper.addPrePlan(pending);
+        dbHelper.addPrePlan(morning);
+        dbHelper.addPrePlan(afternoon);
+        dbHelper.addPrePlan(otherDay);
+
+        List<PrePlan> dayTwoPlans = dbHelper.getPrePlansForTripDaySorted(tripId, 1);
+
+        assertEquals(4, dayTwoPlans.size());
+        assertEquals("Museum", dayTwoPlans.get(0).getTitle());
+        assertEquals("Coffee", dayTwoPlans.get(1).getTitle());
+        assertEquals("Night walk", dayTwoPlans.get(2).getTitle());
+        assertEquals("Buy postcard", dayTwoPlans.get(3).getTitle());
+        assertEquals(1, dayTwoPlans.get(0).getDayIndex());
+        assertEquals("2026-06-02", dayTwoPlans.get(0).getTargetDate());
+        assertEquals(PrePlan.TIME_SECTION_PENDING, dayTwoPlans.get(3).getTimeSection());
+    }
+
+    @Test
+    public void timelineItemsPersistSortAndUpdateCheckinInSingleRecord() {
+        int userId = (int) dbHelper.registerUser("timeline_user", "123456", "Timeline");
+        int tripId = (int) dbHelper.addTrip(createTrip(userId, "Timeline Trip", "Xiamen"));
+
+        TimelineItem morning = createTimelineItem(tripId, 0, TimelineItem.TIME_SLOT_MORNING, "Museum");
+        TimelineItem pending = createTimelineItem(tripId, 0, TimelineItem.TIME_SLOT_PENDING, "Postcard");
+        TimelineItem evening = createTimelineItem(tripId, 0, TimelineItem.TIME_SLOT_EVENING, "Night walk");
+
+        long morningId = dbHelper.addTimelineItem(morning);
+        dbHelper.addTimelineItem(pending);
+        dbHelper.addTimelineItem(evening);
+
+        List<TimelineItem> items = dbHelper.getTimelineItemsForTripDay(tripId, 0);
+
+        assertEquals(3, items.size());
+        assertEquals("Museum", items.get(0).getTitle());
+        assertEquals("Night walk", items.get(1).getTitle());
+        assertEquals("Postcard", items.get(2).getTitle());
+
+        dbHelper.markTimelineItemDoneWithCheckin((int) morningId, "photo.jpg", "Great place", "happy", "2026-06-01 10:00");
+
+        TimelineItem done = dbHelper.getTimelineItemById((int) morningId);
+        assertEquals(TimelineItem.STATUS_DONE, done.getStatus());
+        assertEquals("photo.jpg", done.getCheckinPhoto());
+        assertEquals("Great place", done.getCheckinNote());
+        assertEquals("happy", done.getCheckinMood());
+        assertEquals("2026-06-01 10:00", done.getCheckinTime());
+        assertEquals(33, dbHelper.getTimelineCompletionRate(tripId));
+
+        dbHelper.markTimelineItemSkipped(items.get(2).getId());
+        assertEquals(1, dbHelper.getSkippedTimelineItemsForTrip(tripId).size());
+    }
+
+    @Test
+    public void timelineItemsAcceptPickerTimesAndExpandedPlanTypes() {
+        int userId = (int) dbHelper.registerUser("timeline_picker_user", "123456", "Timeline Picker");
+        int tripId = (int) dbHelper.addTrip(createTrip(userId, "Picker Trip", "Xiamen"));
+
+        TimelineItem shopping = createTimelineItem(tripId, 0, "14:00", "Buy gifts");
+        shopping.setType("购物");
+        TimelineItem hotel = createTimelineItem(tripId, 0, "09:30", "Check hotel");
+        hotel.setType("住宿");
+        TimelineItem dinner = createTimelineItem(tripId, 0, "20:00", "Dinner");
+        dinner.setType(TimelineItem.TYPE_FOOD);
+        TimelineItem pending = createTimelineItem(tripId, 0, TimelineItem.TIME_SLOT_PENDING, "Decide later");
+
+        dbHelper.addTimelineItem(shopping);
+        dbHelper.addTimelineItem(hotel);
+        dbHelper.addTimelineItem(dinner);
+        dbHelper.addTimelineItem(pending);
+
+        List<TimelineItem> items = dbHelper.getTimelineItemsForTripDay(tripId, 0);
+
+        assertEquals(4, items.size());
+        assertEquals("Check hotel", items.get(0).getTitle());
+        assertEquals("09:30", items.get(0).getTimeSlot());
+        assertEquals("住宿", items.get(0).getType());
+        assertEquals("Buy gifts", items.get(1).getTitle());
+        assertEquals("14:00", items.get(1).getTimeSlot());
+        assertEquals("购物", items.get(1).getType());
+        assertEquals("Dinner", items.get(2).getTitle());
+        assertEquals("20:00", items.get(2).getTimeSlot());
+        assertEquals("Decide later", items.get(3).getTitle());
+        assertEquals(TimelineItem.TIME_SLOT_PENDING, items.get(3).getTimeSlot());
+    }
+
+    @Test
+    public void timelineItemsPersistKindAndExcludeExtraCheckinsFromPlanCompletion() {
+        int userId = (int) dbHelper.registerUser("timeline_kind_user", "123456", "Timeline Kind");
+        int tripId = (int) dbHelper.addTrip(createTrip(userId, "Kind Trip", "Xiamen"));
+
+        TimelineItem fixedPlan = createTimelineItem(tripId, 0, "09:00", "Museum");
+        fixedPlan.setKind(TimelineItem.KIND_PLAN_FIXED);
+        fixedPlan.setStatus(TimelineItem.STATUS_DONE);
+
+        TimelineItem pendingPlan = createTimelineItem(tripId, 0, TimelineItem.TIME_SLOT_PENDING, "Buy postcard");
+        pendingPlan.setKind(TimelineItem.KIND_PLAN_PENDING);
+
+        TimelineItem extraCheckin = createTimelineItem(tripId, 0, "15:30", "Street musician");
+        extraCheckin.setKind(TimelineItem.KIND_CHECKIN_EXTRA);
+        extraCheckin.setStatus(TimelineItem.STATUS_DONE);
+
+        dbHelper.addTimelineItem(fixedPlan);
+        dbHelper.addTimelineItem(pendingPlan);
+        dbHelper.addTimelineItem(extraCheckin);
+
+        List<TimelineItem> items = dbHelper.getTimelineItemsForTripDay(tripId, 0);
+
+        assertEquals(3, items.size());
+        assertEquals(TimelineItem.KIND_PLAN_FIXED, items.get(0).getKind());
+        assertEquals(TimelineItem.KIND_CHECKIN_EXTRA, items.get(1).getKind());
+        assertEquals(TimelineItem.KIND_PLAN_PENDING, items.get(2).getKind());
+        assertEquals(50, dbHelper.getTimelineCompletionRate(tripId));
+    }
+
+    @Test
+    public void finishingTripGeneratesRegretsForUnfinishedPrePlansAndTimelinePlansOnce() {
+        int userId = (int) dbHelper.registerUser("regret_loop_user", "123456", "Regret Loop");
+        int tripId = (int) dbHelper.addTrip(createTrip(userId, "Regret Loop Trip", "Xiamen"));
+
+        PrePlan oldPrePlan = createPlan(tripId, 0, PrePlan.TIME_SECTION_PENDING, "Old tea plan");
+        oldPrePlan.setType("Food");
+        dbHelper.addPrePlan(oldPrePlan);
+
+        TimelineItem fixedPlan = createTimelineItem(tripId, 0, "10:00", "Missed museum");
+        fixedPlan.setKind(TimelineItem.KIND_PLAN_FIXED);
+        TimelineItem pendingPlan = createTimelineItem(tripId, 0, TimelineItem.TIME_SLOT_PENDING, "Maybe night market");
+        pendingPlan.setKind(TimelineItem.KIND_PLAN_PENDING);
+        TimelineItem extraCheckin = createTimelineItem(tripId, 0, "18:00", "Unexpected street show");
+        extraCheckin.setKind(TimelineItem.KIND_CHECKIN_EXTRA);
+
+        dbHelper.addTimelineItem(fixedPlan);
+        dbHelper.addTimelineItem(pendingPlan);
+        dbHelper.addTimelineItem(extraCheckin);
+
+        TripStateManager stateManager = new TripStateManager(dbHelper);
+        stateManager.finishTrip(tripId);
+        stateManager.finishTrip(tripId);
+
+        List<RegretItem> regrets = dbHelper.getRegretsForTrip(tripId);
+
+        assertEquals(3, regrets.size());
+        assertContainsRegret(regrets, "Old tea plan");
+        assertContainsRegret(regrets, "Missed museum");
+        assertContainsRegret(regrets, "Maybe night market");
+        assertRegretAbsent(regrets, "Unexpected street show");
+    }
+
+    @Test
+    public void regeneratingRegretsClearsCompletedTimelinePlanRegrets() {
+        int userId = (int) dbHelper.registerUser("regret_sync_user", "123456", "Regret Sync");
+        int tripId = (int) dbHelper.addTrip(createTrip(userId, "Regret Sync Trip", "Xiamen"));
+
+        TimelineItem fixedPlan = createTimelineItem(tripId, 0, "10:00", "Museum");
+        fixedPlan.setKind(TimelineItem.KIND_PLAN_FIXED);
+        TimelineItem pendingPlan = createTimelineItem(tripId, 0, TimelineItem.TIME_SLOT_PENDING, "Night market");
+        pendingPlan.setKind(TimelineItem.KIND_PLAN_PENDING);
+
+        int fixedId = (int) dbHelper.addTimelineItem(fixedPlan);
+        int pendingId = (int) dbHelper.addTimelineItem(pendingPlan);
+
+        dbHelper.generateRegretsForTrip(tripId);
+        assertEquals(2, dbHelper.countRegretsForTrip(tripId));
+
+        dbHelper.markTimelineItemDone(fixedId);
+        dbHelper.markTimelineItemDone(pendingId);
+        dbHelper.generateRegretsForTrip(tripId);
+
+        assertEquals(100, dbHelper.getTimelineCompletionRate(tripId));
+        assertEquals(0, dbHelper.countRegretsForTrip(tripId));
+    }
+
+    @Test
+    public void reviewRegretsRefreshWhenPendingTimelineOrPrePlanCompletes() {
+        int userId = (int) dbHelper.registerUser("review_sync_user", "123456", "Review Sync");
+        int tripId = (int) dbHelper.addTrip(createTrip(userId, "Review Sync Trip", "Xiamen"));
+
+        PrePlan prePlan = createPlan(tripId, 0, PrePlan.TIME_SECTION_PENDING, "Buy postcard");
+        long prePlanId = dbHelper.addPrePlan(prePlan);
+
+        TimelineItem pendingPlan = createTimelineItem(tripId, 0, TimelineItem.TIME_SLOT_PENDING, "Maybe night market");
+        pendingPlan.setKind(TimelineItem.KIND_PLAN_PENDING);
+        int timelineId = (int) dbHelper.addTimelineItem(pendingPlan);
+
+        TripStateManager stateManager = new TripStateManager(dbHelper);
+        stateManager.finishTrip(tripId);
+        assertEquals(TravelConstants.TripState.REVIEWING, dbHelper.getTripForUser(tripId, userId).getStatus());
+        assertEquals(2, dbHelper.countRegretsForTrip(tripId));
+
+        dbHelper.markTimelineItemDone(timelineId);
+        dbHelper.markPrePlanCompleted((int) prePlanId, true);
+
+        assertEquals(100, dbHelper.getTimelineCompletionRate(tripId));
+        assertEquals(0, dbHelper.countRegretsForTrip(tripId));
+    }
+
+    @Test
+    public void completeDemoTripCoversMemoryLoopAndStartsInReviewing() {
+        int userId = (int) dbHelper.registerUser("demo_loop_user", "123456", "Demo Loop");
+
+        int tripId = dbHelper.ensureCompleteDemoTripForUser(userId);
+        Trip trip = dbHelper.getTripForUser(tripId, userId);
+
+        assertEquals("厦门之旅", trip.getName());
+        assertEquals("post_trip", trip.getStatus());
+        assertEquals(4, dbHelper.getDayRecordsForTrip(tripId).size());
+        assertEquals(5, dbHelper.getPhotosForTrip(tripId).size());
+        assertEquals(7, dbHelper.getTimelineItemsForTrip(tripId).size());
+        assertEquals(7, dbHelper.countPackingItemsForTrip(tripId));
+        assertEquals(6, dbHelper.getExpensesForTrip(tripId).size());
+        assertEquals(2, dbHelper.countRegretsForTrip(tripId));
+        assertEquals(67, dbHelper.getTimelineCompletionRate(tripId));
+
+        int resetTripId = dbHelper.ensureCompleteDemoTripForUser(userId);
+        assertEquals(tripId, resetTripId);
+        assertEquals(2, dbHelper.countRegretsForTrip(tripId));
+    }
+
+    @Test
+    public void refreshingDemoTripKeepsUserEditedCoverPath() {
+        int userId = (int) dbHelper.registerUser("demo_cover_user", "123456", "Demo Cover");
+        int tripId = dbHelper.ensureCompleteDemoTripForUser(userId);
+        Trip trip = dbHelper.getTripForUser(tripId, userId);
+        trip.setCoverPath("/tmp/user_selected_cover.jpg");
+        dbHelper.updateTrip(trip);
+
+        int refreshedTripId = dbHelper.ensureCompleteDemoTripForUser(userId);
+        Trip refreshedTrip = dbHelper.getTripForUser(refreshedTripId, userId);
+
+        assertEquals(tripId, refreshedTripId);
+        assertEquals("/tmp/user_selected_cover.jpg", refreshedTrip.getCoverPath());
+    }
+
     private Trip createTrip(int userId, String name, String destination) {
         Trip trip = new Trip();
         trip.setUserId(userId);
@@ -145,6 +392,32 @@ public class DatabaseUserIsolationTest {
         trip.setCoverPath("");
         trip.setCreatedAt("2026-06-08");
         return trip;
+    }
+
+    private PrePlan createPlan(int tripId, int dayIndex, String timeSection, String title) {
+        PrePlan plan = new PrePlan();
+        plan.setTripId(tripId);
+        plan.setDayIndex(dayIndex);
+        plan.setTimeSection(timeSection);
+        plan.setType("Other");
+        plan.setTitle(title);
+        plan.setLocation("");
+        plan.setNote("");
+        plan.setIsCompleted(0);
+        plan.setCreatedAt("2026-06-09");
+        return plan;
+    }
+
+    private TimelineItem createTimelineItem(int tripId, int dayIndex, String timeSlot, String title) {
+        TimelineItem item = new TimelineItem();
+        item.setTripId(tripId);
+        item.setDayIndex(dayIndex);
+        item.setTimeSlot(timeSlot);
+        item.setType(TimelineItem.TYPE_OTHER);
+        item.setTitle(title);
+        item.setStatus(TimelineItem.STATUS_PLANNED);
+        item.setCreatedAt("2026-06-09");
+        return item;
     }
 
     private void assertContainsCategory(List<PackingItem> items, String category) {
@@ -170,6 +443,23 @@ public class DatabaseUserIsolationTest {
         for (PackingItem item : items) {
             if (itemName.equals(item.getItemName())) {
                 org.junit.Assert.fail("Unexpected packing item in another trip: " + itemName);
+            }
+        }
+    }
+
+    private void assertContainsRegret(List<RegretItem> regrets, String title) {
+        for (RegretItem item : regrets) {
+            if (title.equals(item.getTitle())) {
+                return;
+            }
+        }
+        org.junit.Assert.fail("Missing regret: " + title);
+    }
+
+    private void assertRegretAbsent(List<RegretItem> regrets, String title) {
+        for (RegretItem item : regrets) {
+            if (title.equals(item.getTitle())) {
+                org.junit.Assert.fail("Unexpected regret: " + title);
             }
         }
     }

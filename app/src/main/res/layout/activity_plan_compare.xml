@@ -51,7 +51,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="自动汇总当前旅行未完成内容"
+                android:text="本次旅行未完成的遗憾"
                 android:textColor="@color/text_primary"
                 android:textSize="17sp"
                 android:textStyle="bold" />
@@ -61,7 +61,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:lineSpacingExtra="3dp"
-                android:text="这里会自动汇总本次旅行中未完成的计划，方便你复盘和下次改进。"
+                android:text="以下是汇总出的本次旅行中未完成的计划，方便你复盘和对下一次计划展望。"
                 android:textColor="@color/text_secondary"
                 android:textSize="13sp" />
 

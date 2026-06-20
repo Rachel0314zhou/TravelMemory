@@ -17,6 +17,7 @@ import com.example.travelmemory.adapter.TripAdapter;
 import com.example.travelmemory.db.DatabaseHelper;
 import com.example.travelmemory.model.Trip;
 import com.example.travelmemory.utils.SessionManager;
+import com.example.travelmemory.utils.TripReportAccess;
 import com.example.travelmemory.utils.TripNavigator;
 import com.example.travelmemory.utils.TravelConstants;
 
@@ -89,6 +90,11 @@ public class SelectTripActivity extends AppCompatActivity implements TripAdapter
             confirmDeleteTrip(trip);
             return;
         }
+        if (TravelConstants.MODE_MEMORY.equals(mode)
+                && !TripReportAccess.canViewReport(dbHelper, trip.getId(), currentUserId)) {
+            Toast.makeText(this, "进入旅行整理阶段后才能查看旅行报告", Toast.LENGTH_SHORT).show();
+            return;
+        }
         Toast.makeText(this, "已选择：" + trip.getName(), Toast.LENGTH_SHORT).show();
         TripNavigator.openTripDetail(this, trip.getId(), mode);
     }
@@ -98,7 +104,7 @@ public class SelectTripActivity extends AppCompatActivity implements TripAdapter
         if (TravelConstants.MODE_PACKING.equals(mode)) return "请选择要整理行李的旅行";
         if (TravelConstants.MODE_DURING_TRIP.equals(mode)) return "请选择要记录的旅行";
         if (TravelConstants.MODE_POST_TRIP.equals(mode)) return "请选择要整理回忆的旅行";
-        if (TravelConstants.MODE_MEMORY.equals(mode)) return "请选择要生成回忆卡片的旅行";
+        if (TravelConstants.MODE_MEMORY.equals(mode)) return "请选择要生成总结报告的旅行";
         if (TravelConstants.MODE_EXPENSE.equals(mode)) return "请选择要查看花费的旅行";
         if (TravelConstants.MODE_DELETE_TRIP.equals(mode)) return "请选择要删除的旅行，确认后将移除这趟旅行及相关记录";
         return "请选择一趟旅行继续操作";

@@ -149,7 +149,7 @@ public class TripDetailActivity extends AppCompatActivity {
         addActionCard("旅行整理", "补充记录，回顾遗憾，生成回忆。", () -> switchMode(TravelConstants.MODE_POST_TRIP));
         addSectionTitle("数据概览");
         addStatGrid();
-        addSecondaryAction("查看回忆卡片", () -> switchMode(TravelConstants.MODE_MEMORY));
+        addSecondaryAction("查看回忆报告", () -> switchMode(TravelConstants.MODE_MEMORY));
     }
 
     private void showPreTripMode() {
@@ -176,8 +176,8 @@ public class TripDetailActivity extends AppCompatActivity {
     private void showDuringTripMode() {
         tvModeTitle.setText("旅行记录");
         tvModeDescription.setText("记录路上的日记、照片、打卡和花费。");
-        addActionCard("记录今日旅行", "写下今天的故事、心情，并补充路上的照片。", () -> openWithTrip(DayRecordActivity.class));
-        addActionCard("景点/美食打卡", "标记值得记住的地点。", () -> openWithTrip(SpotsActivity.class));
+        addActionCard("进入当日记录", "按天完成计划、补写日记、记录临时打卡和当天心情。", this::openScheduleTimeline);
+        addActionCard("上传旅行照片", "把路上的照片加入旅行相册，报告页会统一读取这些影像。", () -> openWithTrip(PhotoActivity.class));
         addActionCard("记录花费", "记下交通、住宿、餐饮等支出。", () -> openWithTrip(ExpenseActivity.class));
         addSecondaryAction("结束旅行", this::confirmEndTrip);
     }
@@ -186,21 +186,19 @@ public class TripDetailActivity extends AppCompatActivity {
         tvModeTitle.setText("旅行整理");
         tvModeDescription.setText("补充记录，回顾遗憾，生成属于这次旅行的回忆卡片。");
         addSectionTitle("补充记录");
-        addActionCard("补写旅行日记", "把漏掉的故事补回来。", () -> openWithTrip(DayRecordActivity.class));
+        addActionCard("补充当日记录", "回到每天的记录中补充完成状态、日记、照片和临时打卡。", this::openScheduleTimeline);
         addActionCard("补充旅行照片", "整理这趟旅行的照片。", () -> openWithTrip(PhotoActivity.class));
         addActionCard("补记旅行花费", "完善本次旅行的账单。", () -> openWithTrip(ExpenseActivity.class));
         addSectionTitle("回顾计划");
         addActionCard("遗憾回顾", "看看这次没来得及完成的计划。", () -> openWithTrip(PlanCompareActivity.class));
         addSectionTitle("旅行成果");
-        addActionCard("旅行回顾", "上下滑动浏览照片、文字和心情标签。", () -> openWithTrip(TripRecapActivity.class));
-        addActionCard("旅行纪念报告", "把日记、照片、打卡、花费和遗憾整理成沉浸式故事报告。", () -> openWithTrip(TripReportActivity.class));
+        addActionCard("旅行纪念报告", "把每日回顾、相册、遗憾和总结整理成最终报告。", () -> TripNavigator.openReport(this, tripId));
     }
 
     private void showMemoryMode() {
         tvModeTitle.setText("旅行纪念报告");
         tvModeDescription.setText("把这次旅行整理成可沉浸浏览、可保存分享的纪念报告。");
-        addActionCard("查看旅行回顾", "打开沉浸式滑动回顾。", () -> openWithTrip(TripRecapActivity.class));
-        addActionCard("查看旅行纪念报告", "像旅行 Vlog 总结页一样回看这次旅行。", () -> openWithTrip(TripReportActivity.class));
+        addActionCard("查看旅行纪念报告", "查看每日回顾、旅行相册、遗憾清单和旅行总结。", () -> TripNavigator.openReport(this, tripId));
         addActionCard("查看全部报告", "从回忆中心再次进入每一趟旅行的纪念报告。", () -> startActivity(new Intent(this, MemoryListActivity.class)));
     }
 
@@ -255,6 +253,13 @@ public class TripDetailActivity extends AppCompatActivity {
 
     private void openWithTrip(Class<?> target) {
         TripNavigator.openFeature(this, target, tripId);
+    }
+
+    private void openScheduleTimeline() {
+        Intent intent = new Intent(this, SearchActivity.class);
+        intent.putExtra(TravelConstants.EXTRA_TRIP_ID, tripId);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        startActivity(intent);
     }
 
     private void addSectionTitle(String title) {

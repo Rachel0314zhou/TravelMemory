@@ -5,6 +5,10 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 
 import com.example.travelmemory.model.DayRecord;
 import com.example.travelmemory.model.Expense;
@@ -14,15 +18,24 @@ import com.example.travelmemory.model.PrePlan;
 import com.example.travelmemory.model.RegretItem;
 import com.example.travelmemory.model.SearchResult;
 import com.example.travelmemory.model.Spot;
+import com.example.travelmemory.model.TimelineItem;
 import com.example.travelmemory.model.Trip;
 import com.example.travelmemory.model.User;
+import com.example.travelmemory.utils.TravelConstants;
 
 import java.util.ArrayList;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "travel_memory.db";
-    private static final int DATABASE_VERSION = 8;
+    private static final int DATABASE_VERSION = 11;
 
     public static final String TABLE_USER = "user";
     public static final String TABLE_TRIP = "trip";
@@ -33,9 +46,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public static final String TABLE_PRE_PLAN = "pre_plan";
     public static final String TABLE_PACKING_ITEM = "packing_item";
     public static final String TABLE_REGRET_ITEM = "regret_item";
+    public static final String TABLE_TIMELINE_ITEM = "timeline_item";
+    private final Context appContext;
 
     public DatabaseHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
+        appContext = context.getApplicationContext();
     }
 
     @Override
@@ -47,12 +63,17 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL("CREATE TABLE " + TABLE_SPOT + " (id INTEGER PRIMARY KEY AUTOINCREMENT, trip_id INTEGER, name TEXT, type TEXT, note TEXT, is_favorite INTEGER, source_plan_id INTEGER DEFAULT 0, created_at TEXT)");
         db.execSQL("CREATE TABLE " + TABLE_EXPENSE + " (id INTEGER PRIMARY KEY AUTOINCREMENT, trip_id INTEGER, category TEXT, amount REAL, note TEXT, date TEXT)");
         createTravelLoopTables(db);
+        createTimelineTables(db);
     }
 
     private void createTravelLoopTables(SQLiteDatabase db) {
-        db.execSQL("CREATE TABLE IF NOT EXISTS " + TABLE_PRE_PLAN + " (id INTEGER PRIMARY KEY AUTOINCREMENT, trip_id INTEGER, type TEXT, title TEXT, location TEXT, target_date TEXT, time_text TEXT, note TEXT, is_completed INTEGER DEFAULT 0, status TEXT DEFAULT 'normal', created_at TEXT)");
+        db.execSQL("CREATE TABLE IF NOT EXISTS " + TABLE_PRE_PLAN + " (id INTEGER PRIMARY KEY AUTOINCREMENT, trip_id INTEGER, day_index INTEGER DEFAULT 0, type TEXT, title TEXT, location TEXT, target_date TEXT, time_text TEXT, time_section TEXT DEFAULT '待定', note TEXT, is_completed INTEGER DEFAULT 0, status TEXT DEFAULT 'normal', created_at TEXT)");
         db.execSQL("CREATE TABLE IF NOT EXISTS " + TABLE_PACKING_ITEM + " (id INTEGER PRIMARY KEY AUTOINCREMENT, trip_id INTEGER, category TEXT, item_name TEXT, is_selected INTEGER DEFAULT 1, is_packed INTEGER DEFAULT 0, is_custom INTEGER DEFAULT 0, created_at TEXT)");
         db.execSQL("CREATE TABLE IF NOT EXISTS " + TABLE_REGRET_ITEM + " (id INTEGER PRIMARY KEY AUTOINCREMENT, trip_id INTEGER, pre_plan_id INTEGER, title TEXT, type TEXT, reason TEXT, created_at TEXT)");
+    }
+
+    private void createTimelineTables(SQLiteDatabase db) {
+        db.execSQL("CREATE TABLE IF NOT EXISTS " + TABLE_TIMELINE_ITEM + " (id INTEGER PRIMARY KEY AUTOINCREMENT, trip_id INTEGER, day_index INTEGER DEFAULT 0, title TEXT, type TEXT DEFAULT '其他', time_slot TEXT DEFAULT '待定', status TEXT DEFAULT 'planned', kind TEXT DEFAULT 'plan_fixed', checkin_photo TEXT, checkin_note TEXT, checkin_mood TEXT, checkin_time TEXT, created_at TEXT)");
     }
 
     @Override
@@ -90,6 +111,17 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         if (oldVersion < 8) {
             addColumnIfMissing(db, TABLE_PRE_PLAN, "status", "TEXT DEFAULT 'normal'");
         }
+        if (oldVersion < 9) {
+            addColumnIfMissing(db, TABLE_PRE_PLAN, "day_index", "INTEGER DEFAULT 0");
+            addColumnIfMissing(db, TABLE_PRE_PLAN, "time_section", "TEXT DEFAULT '待定'");
+            backfillPrePlanDayIndexes(db);
+        }
+        if (oldVersion < 10) {
+            createTimelineTables(db);
+        }
+        if (oldVersion < 11) {
+            addColumnIfMissing(db, TABLE_TIMELINE_ITEM, "kind", "TEXT DEFAULT 'plan_fixed'");
+        }
     }
 
     private boolean columnExists(SQLiteDatabase db, String tableName, String columnName) {
@@ -124,6 +156,105 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     public boolean hasTripsForUser(int userId) {
         return intQueryWithArgs("SELECT COUNT(*) FROM " + TABLE_TRIP + " WHERE user_id=?", String.valueOf(userId)) > 0;
+    }
+
+    public int ensureCompleteDemoTripForUser(int userId) {
+        if (userId <= 0) return -1;
+        updateUserProfile(userId, "旅行体验官", 24, "未填写", "美食探店、自然风光、拍照记录", true);
+        SQLiteDatabase db = getWritableDatabase();
+        int tripId = findDemoTripId(userId);
+        if (tripId <= 0) {
+            ContentValues tripValues = new ContentValues();
+            tripValues.put("user_id", userId);
+            tripValues.put("name", "厦门之旅");
+            tripValues.put("destination", "厦门");
+            tripValues.put("start_date", "2026-07-01");
+            tripValues.put("end_date", "2026-07-04");
+            tripValues.put("cover_path", createDemoImage("demo_xiamen_cover.png", "厦门之旅", "#2E7D7A", "#F8D8A8"));
+            tripValues.put("mode", TravelConstants.TripMode.PLANNED);
+            tripValues.put("status", TravelConstants.TripState.REVIEWING);
+            tripValues.put("created_at", "2026-07-01");
+            tripId = (int) db.insert(TABLE_TRIP, null, tripValues);
+        } else {
+            ContentValues values = new ContentValues();
+            values.put("destination", "厦门");
+            values.put("start_date", "2026-07-01");
+            values.put("end_date", "2026-07-04");
+            values.put("mode", TravelConstants.TripMode.PLANNED);
+            values.put("status", TravelConstants.TripState.REVIEWING);
+            db.update(TABLE_TRIP, values, "id=? AND user_id=?", new String[]{String.valueOf(tripId), String.valueOf(userId)});
+            resetTripMemoryData(db, tripId);
+        }
+        if (tripId > 0) {
+            insertCompleteDemoData(db, tripId);
+            generateRegretsForTrip(tripId);
+        }
+        return tripId;
+    }
+
+    private int findDemoTripId(int userId) {
+        Cursor cursor = getReadableDatabase().query(TABLE_TRIP, new String[]{"id"},
+                "user_id=? AND name=?", new String[]{String.valueOf(userId), "厦门之旅"},
+                null, null, "id DESC", "1");
+        int id = -1;
+        if (cursor != null) {
+            if (cursor.moveToFirst()) id = cursor.getInt(cursor.getColumnIndexOrThrow("id"));
+            cursor.close();
+        }
+        return id;
+    }
+
+    private void resetTripMemoryData(SQLiteDatabase db, int tripId) {
+        db.delete(TABLE_DAY_RECORD, "trip_id=?", new String[]{String.valueOf(tripId)});
+        db.delete(TABLE_PHOTO, "trip_id=?", new String[]{String.valueOf(tripId)});
+        db.delete(TABLE_SPOT, "trip_id=?", new String[]{String.valueOf(tripId)});
+        db.delete(TABLE_EXPENSE, "trip_id=?", new String[]{String.valueOf(tripId)});
+        db.delete(TABLE_PRE_PLAN, "trip_id=?", new String[]{String.valueOf(tripId)});
+        db.delete(TABLE_PACKING_ITEM, "trip_id=?", new String[]{String.valueOf(tripId)});
+        db.delete(TABLE_TIMELINE_ITEM, "trip_id=?", new String[]{String.valueOf(tripId)});
+        db.delete(TABLE_REGRET_ITEM, "trip_id=?", new String[]{String.valueOf(tripId)});
+    }
+
+    private void insertCompleteDemoData(SQLiteDatabase db, int tripId) {
+        insertDemoPrePlan(db, tripId, 0, "景点", "沙坡尾傍晚散步", "沙坡尾", "2026-07-01", "18:30", TimelineItem.KIND_PLAN_FIXED, 1);
+        insertDemoPrePlan(db, tripId, 1, "景点", "鼓浪屿半日游", "鼓浪屿", "2026-07-02", "09:00", TimelineItem.KIND_PLAN_FIXED, 1);
+        insertDemoPrePlan(db, tripId, 1, "美食", "曾厝垵海鲜小吃", "曾厝垵", "2026-07-02", "19:00", TimelineItem.KIND_PLAN_FIXED, 1);
+        insertDemoPrePlan(db, tripId, 2, "购物", "买一张厦门明信片", "中山路文创店", "2026-07-03", "待定", TimelineItem.KIND_PLAN_PENDING, 0);
+        insertDemoPrePlan(db, tripId, 3, "美食", "再吃一次土笋冻", "八市", "2026-07-04", "待定", TimelineItem.KIND_PLAN_PENDING, 0);
+
+        insertSeedPackingItem(db, tripId, "证件类", "身份证", 1, 1);
+        insertSeedPackingItem(db, tripId, "数码类", "手机充电器", 1, 1);
+        insertSeedPackingItem(db, tripId, "数码类", "相机备用电池", 1, 1);
+        insertSeedPackingItem(db, tripId, "衣物类", "换洗衣物", 1, 1);
+        insertSeedPackingItem(db, tripId, "洗漱类", "防晒霜", 1, 1);
+        insertSeedPackingItem(db, tripId, "出行类", "折叠伞", 1, 0);
+        insertSeedPackingItem(db, tripId, "其他类", "明信片邮票", 1, 0);
+
+        int day1 = insertDemoDayRecord(db, tripId, "2026-07-01", "抵达厦门后先去了沙坡尾，傍晚的海风和街边灯光都很舒服。", "开心");
+        int day2 = insertDemoDayRecord(db, tripId, "2026-07-02", "鼓浪屿比想象中更适合慢慢走，红砖洋房、转角小店和海边照片都很值得回看。", "兴奋");
+        int day3 = insertDemoDayRecord(db, tripId, "2026-07-03", "上午去了南普陀，下午沿环岛路骑行，今天的节奏更放松。", "平静");
+        int day4 = insertDemoDayRecord(db, tripId, "2026-07-04", "最后一天在八市吃了早餐，没来得及再去买明信片，有一点遗憾。", "遗憾");
+
+        insertDemoPhoto(db, tripId, day1, "demo_xiamen_shapowei.png", "沙坡尾", "#315C72", "#F6C177", "2026-07-01");
+        insertDemoPhoto(db, tripId, day2, "demo_xiamen_gulangyu.png", "鼓浪屿", "#3B7A57", "#F2D0A4", "2026-07-02");
+        insertDemoPhoto(db, tripId, day2, "demo_xiamen_sea.png", "海边照片", "#2D6CDF", "#F9E2AF", "2026-07-02");
+        insertDemoPhoto(db, tripId, day3, "demo_xiamen_road.png", "环岛路", "#3A6B35", "#B7E4C7", "2026-07-03");
+        insertDemoPhoto(db, tripId, 0, "demo_xiamen_album.png", "旅行相册", "#7D4E57", "#F4A261", "2026-07-03");
+
+        insertDemoTimelineItem(db, tripId, 0, "09:30", TimelineItem.TYPE_TRANSPORT, "高崎机场到酒店", TimelineItem.KIND_PLAN_FIXED, TimelineItem.STATUS_DONE, "", "顺利到达，放下行李后开始第一天。", "开心", "2026-07-01 09:30");
+        insertDemoTimelineItem(db, tripId, 0, "18:30", TimelineItem.TYPE_SPOT, "沙坡尾傍晚散步", TimelineItem.KIND_PLAN_FIXED, TimelineItem.STATUS_DONE, createDemoImage("demo_timeline_shapowei.png", "沙坡尾", "#264653", "#E9C46A"), "傍晚的街区很适合散步和拍照。", "开心", "2026-07-01 18:30");
+        insertDemoTimelineItem(db, tripId, 1, "09:00", TimelineItem.TYPE_SPOT, "鼓浪屿半日游", TimelineItem.KIND_PLAN_FIXED, TimelineItem.STATUS_DONE, createDemoImage("demo_timeline_gulangyu.png", "鼓浪屿", "#2A9D8F", "#F4A261"), "红砖洋房、海边小路和钢琴声都很有记忆点。", "兴奋", "2026-07-02 09:00");
+        insertDemoTimelineItem(db, tripId, 1, "19:00", TimelineItem.TYPE_FOOD, "曾厝垵海鲜小吃", TimelineItem.KIND_PLAN_FIXED, TimelineItem.STATUS_DONE, "", "海蛎煎和沙茶面都很适合写进回忆。", "满足", "2026-07-02 19:00");
+        insertDemoTimelineItem(db, tripId, 2, "16:20", TimelineItem.TYPE_SPOT, "环岛路临时看海", TimelineItem.KIND_CHECKIN_EXTRA, TimelineItem.STATUS_DONE, createDemoImage("demo_timeline_extra.png", "临时看海", "#1D3557", "#A8DADC"), "原本没有安排，结果成了最舒服的一段。", "平静", "2026-07-03 16:20");
+        insertDemoTimelineItem(db, tripId, 2, TimelineItem.TIME_SLOT_PENDING, TimelineItem.TYPE_SHOPPING, "买一张厦门明信片", TimelineItem.KIND_PLAN_PENDING, TimelineItem.STATUS_PLANNED, "", "", "", "");
+        insertDemoTimelineItem(db, tripId, 3, TimelineItem.TIME_SLOT_PENDING, TimelineItem.TYPE_FOOD, "再吃一次土笋冻", TimelineItem.KIND_PLAN_PENDING, TimelineItem.STATUS_PLANNED, "", "", "", "");
+
+        insertSeedExpense(db, tripId, "餐饮", 238.5, "沙茶面、海蛎煎和小吃", "2026-07-02");
+        insertSeedExpense(db, tripId, "交通", 126.0, "机场接驳、轮渡和公交", "2026-07-01");
+        insertSeedExpense(db, tripId, "住宿", 880.0, "曾厝垵附近民宿两晚", "2026-07-01");
+        insertSeedExpense(db, tripId, "门票", 90.0, "鼓浪屿景点联票", "2026-07-02");
+        insertSeedExpense(db, tripId, "购物", 156.0, "伴手礼和冰箱贴", "2026-07-03");
+        insertSeedExpense(db, tripId, "餐饮", 78.0, "八市早餐", "2026-07-04");
     }
 
     private void insertSeedDataForUser(SQLiteDatabase db, int userId) {
@@ -165,6 +296,26 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         insertSeedExpense(db, tripId, "门票", 80.0, "景区门票", "2026-06-02");
 
         generateRegretsForTrip((int) tripId);
+
+        ContentValues xiamenTripValues = new ContentValues();
+        xiamenTripValues.put("user_id", userId);
+        xiamenTripValues.put("name", "厦门之旅");
+        xiamenTripValues.put("destination", "厦门");
+        xiamenTripValues.put("start_date", "2026-07-01");
+        xiamenTripValues.put("end_date", "2026-07-04");
+        xiamenTripValues.put("cover_path", "");
+        xiamenTripValues.put("mode", "planned_record");
+        xiamenTripValues.put("status", "during_trip");
+        xiamenTripValues.put("created_at", "2026-07-01");
+        long xiamenTripId = db.insert(TABLE_TRIP, null, xiamenTripValues);
+        if (xiamenTripId == -1) return;
+
+        insertSeedTimelineItem(db, xiamenTripId, 0, TimelineItem.TIME_SLOT_MORNING, TimelineItem.TYPE_SPOT, "鼓浪屿游览", "2026-07-01");
+        insertSeedTimelineItem(db, xiamenTripId, 0, TimelineItem.TIME_SLOT_AFTERNOON, TimelineItem.TYPE_SPOT, "中山路步行街", "2026-07-01");
+        insertSeedTimelineItem(db, xiamenTripId, 0, TimelineItem.TIME_SLOT_EVENING, TimelineItem.TYPE_TRANSPORT, "环岛路骑行", "2026-07-01");
+        insertSeedTimelineItem(db, xiamenTripId, 1, TimelineItem.TIME_SLOT_MORNING, TimelineItem.TYPE_SPOT, "厦门大学", "2026-07-02");
+        insertSeedTimelineItem(db, xiamenTripId, 1, TimelineItem.TIME_SLOT_AFTERNOON, TimelineItem.TYPE_SPOT, "南普陀寺", "2026-07-02");
+        insertSeedTimelineItem(db, xiamenTripId, 1, TimelineItem.TIME_SLOT_EVENING, TimelineItem.TYPE_FOOD, "曾厝垵美食", "2026-07-02");
     }
 
     private void insertSeedDayRecord(SQLiteDatabase db, long tripId, String date, String note, String mood) {
@@ -221,6 +372,112 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put("is_custom", 0);
         values.put("created_at", "2026-06-01");
         db.insert(TABLE_PACKING_ITEM, null, values);
+    }
+
+    private void insertSeedTimelineItem(SQLiteDatabase db, long tripId, int dayIndex, String timeSlot, String type, String title, String createdAt) {
+        ContentValues values = new ContentValues();
+        values.put("trip_id", tripId);
+        values.put("day_index", Math.max(0, dayIndex));
+        values.put("title", title);
+        values.put("type", type);
+        values.put("time_slot", timeSlot);
+        values.put("status", TimelineItem.STATUS_PLANNED);
+        values.put("checkin_photo", "");
+        values.put("checkin_note", "");
+        values.put("checkin_mood", "");
+        values.put("checkin_time", "");
+        values.put("created_at", createdAt);
+        db.insert(TABLE_TIMELINE_ITEM, null, values);
+    }
+
+    private void insertDemoPrePlan(SQLiteDatabase db, int tripId, int dayIndex, String type, String title,
+                                   String location, String targetDate, String timeText, String kind, int completed) {
+        ContentValues values = new ContentValues();
+        values.put("trip_id", tripId);
+        values.put("day_index", dayIndex);
+        values.put("type", type);
+        values.put("title", title);
+        values.put("location", location);
+        values.put("target_date", targetDate);
+        values.put("time_text", timeText);
+        values.put("time_section", TimelineItem.KIND_PLAN_PENDING.equals(kind) ? "待定" : "具体计划");
+        values.put("note", TimelineItem.KIND_PLAN_PENDING.equals(kind) ? "旅行中待定安排" : "行前准备计划");
+        values.put("is_completed", completed);
+        values.put("status", completed == 1 ? "done" : "normal");
+        values.put("created_at", "2026-07-01");
+        db.insert(TABLE_PRE_PLAN, null, values);
+    }
+
+    private int insertDemoDayRecord(SQLiteDatabase db, int tripId, String date, String note, String mood) {
+        ContentValues values = new ContentValues();
+        values.put("trip_id", tripId);
+        values.put("date", date);
+        values.put("note", note);
+        values.put("mood", mood);
+        values.put("created_at", date);
+        return (int) db.insert(TABLE_DAY_RECORD, null, values);
+    }
+
+    private void insertDemoPhoto(SQLiteDatabase db, int tripId, int dayRecordId, String filename,
+                                 String label, String startColor, String endColor, String createdAt) {
+        ContentValues values = new ContentValues();
+        values.put("trip_id", tripId);
+        values.put("day_record_id", dayRecordId);
+        values.put("image_path", createDemoImage(filename, label, startColor, endColor));
+        values.put("created_at", createdAt);
+        db.insert(TABLE_PHOTO, null, values);
+    }
+
+    private void insertDemoTimelineItem(SQLiteDatabase db, int tripId, int dayIndex, String timeSlot, String type,
+                                        String title, String kind, String status, String photo, String note,
+                                        String mood, String checkinTime) {
+        ContentValues values = new ContentValues();
+        values.put("trip_id", tripId);
+        values.put("day_index", dayIndex);
+        values.put("title", title);
+        values.put("type", type);
+        values.put("time_slot", timeSlot);
+        values.put("status", status);
+        values.put("kind", kind);
+        values.put("checkin_photo", photo);
+        values.put("checkin_note", note);
+        values.put("checkin_mood", mood);
+        values.put("checkin_time", checkinTime);
+        values.put("created_at", "2026-07-0" + Math.min(dayIndex + 1, 4));
+        db.insert(TABLE_TIMELINE_ITEM, null, values);
+    }
+
+    private String createDemoImage(String filename, String label, String startColor, String endColor) {
+        try {
+            File dir = new File(appContext.getFilesDir(), "demo");
+            if (!dir.exists() && !dir.mkdirs()) return "";
+            File file = new File(dir, filename);
+            if (file.exists()) return file.getAbsolutePath();
+
+            int width = 960;
+            int height = 640;
+            Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(bitmap);
+            Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            paint.setColor(Color.parseColor(startColor));
+            canvas.drawRect(0, 0, width, height, paint);
+            paint.setColor(Color.parseColor(endColor));
+            canvas.drawCircle(width * 0.78f, height * 0.25f, 220f, paint);
+            paint.setColor(Color.argb(180, 255, 255, 255));
+            canvas.drawRoundRect(72, 390, 888, 560, 34, 34, paint);
+            paint.setColor(Color.rgb(45, 65, 78));
+            paint.setTextSize(64);
+            paint.setTypeface(android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD));
+            canvas.drawText(label, 120, 490, paint);
+            FileOutputStream out = new FileOutputStream(file);
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
+            out.flush();
+            out.close();
+            bitmap.recycle();
+            return file.getAbsolutePath();
+        } catch (Exception ignored) {
+            return "";
+        }
     }
 
     public User getUser() {
@@ -520,6 +777,40 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return list;
     }
 
+    public List<Photo> getPhotosForDayRecord(int dayRecordId) {
+        List<Photo> list = new ArrayList<>();
+        Cursor cursor = getReadableDatabase().query(TABLE_PHOTO, null, "day_record_id=?",
+                new String[]{String.valueOf(dayRecordId)}, null, null, "id ASC");
+        if (cursor != null) {
+            if (cursor.moveToFirst()) {
+                do {
+                    list.add(new Photo(cursor.getInt(cursor.getColumnIndexOrThrow("id")),
+                            cursor.getInt(cursor.getColumnIndexOrThrow("trip_id")),
+                            cursor.getInt(cursor.getColumnIndexOrThrow("day_record_id")),
+                            getOptionalString(cursor, "image_path"),
+                            getOptionalString(cursor, "created_at")));
+                } while (cursor.moveToNext());
+            }
+            cursor.close();
+        }
+        return list;
+    }
+
+    public void replacePhotosForDayRecord(int tripId, int dayRecordId, List<String> imagePaths, String createdAt) {
+        SQLiteDatabase db = getWritableDatabase();
+        db.delete(TABLE_PHOTO, "day_record_id=?", new String[]{String.valueOf(dayRecordId)});
+        if (imagePaths == null) return;
+        for (String imagePath : imagePaths) {
+            if (imagePath == null || imagePath.trim().isEmpty()) continue;
+            ContentValues values = new ContentValues();
+            values.put("trip_id", tripId);
+            values.put("day_record_id", dayRecordId);
+            values.put("image_path", imagePath);
+            values.put("created_at", createdAt);
+            db.insert(TABLE_PHOTO, null, values);
+        }
+    }
+
     public void deletePhoto(int id) {
         getWritableDatabase().delete(TABLE_PHOTO, "id=?", new String[]{String.valueOf(id)});
     }
@@ -589,7 +880,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
     public long addPrePlan(PrePlan plan) {
-        return getWritableDatabase().insert(TABLE_PRE_PLAN, null, prePlanValues(plan));
+        long id = getWritableDatabase().insert(TABLE_PRE_PLAN, null, prePlanValues(plan));
+        if (id != -1) refreshRegretsForTrip(plan.getTripId());
+        return id;
     }
 
     public List<PrePlan> getPrePlansForTrip(int tripId) {
@@ -601,7 +894,14 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     public List<PrePlan> getPrePlansForTripSorted(int tripId) {
         List<PrePlan> list = new ArrayList<>();
-        Cursor cursor = getReadableDatabase().query(TABLE_PRE_PLAN, null, "trip_id=?", new String[]{String.valueOf(tripId)}, null, null, "CASE WHEN target_date IS NULL OR target_date='' THEN 1 ELSE 0 END, target_date ASC, time_text ASC, id ASC");
+        Cursor cursor = getReadableDatabase().query(TABLE_PRE_PLAN, null, "trip_id=?", new String[]{String.valueOf(tripId)}, null, null, "day_index ASC, " + timeSectionSortSql() + ", time_text ASC, id ASC");
+        readPrePlans(cursor, list);
+        return list;
+    }
+
+    public List<PrePlan> getPrePlansForTripDaySorted(int tripId, int dayIndex) {
+        List<PrePlan> list = new ArrayList<>();
+        Cursor cursor = getReadableDatabase().query(TABLE_PRE_PLAN, null, "trip_id=? AND day_index=?", new String[]{String.valueOf(tripId), String.valueOf(Math.max(0, dayIndex))}, null, null, timeSectionSortSql() + ", time_text ASC, id ASC");
         readPrePlans(cursor, list);
         return list;
     }
@@ -620,11 +920,13 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     list.add(new PrePlan(
                             cursor.getInt(cursor.getColumnIndexOrThrow("id")),
                             cursor.getInt(cursor.getColumnIndexOrThrow("trip_id")),
+                            getOptionalInt(cursor, "day_index"),
                             getOptionalString(cursor, "type"),
                             getOptionalString(cursor, "title"),
                             getOptionalString(cursor, "location"),
                             getOptionalString(cursor, "target_date"),
                             getOptionalString(cursor, "time_text"),
+                            getOptionalString(cursor, "time_section"),
                             getOptionalString(cursor, "note"),
                             cursor.getInt(cursor.getColumnIndexOrThrow("is_completed")),
                             getOptionalString(cursor, "status"),
@@ -636,17 +938,24 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
     public int updatePrePlan(PrePlan plan) {
-        return getWritableDatabase().update(TABLE_PRE_PLAN, prePlanValues(plan), "id=?", new String[]{String.valueOf(plan.getId())});
+        int updated = getWritableDatabase().update(TABLE_PRE_PLAN, prePlanValues(plan), "id=?", new String[]{String.valueOf(plan.getId())});
+        if (updated > 0) refreshRegretsForTrip(plan.getTripId());
+        return updated;
     }
 
     public void deletePrePlan(int id) {
+        PrePlan plan = getPrePlanById(id);
         getWritableDatabase().delete(TABLE_PRE_PLAN, "id=?", new String[]{String.valueOf(id)});
+        if (plan != null) refreshRegretsForTrip(plan.getTripId());
     }
 
     public int markPrePlanCompleted(int id, boolean completed) {
+        PrePlan plan = getPrePlanById(id);
         ContentValues values = new ContentValues();
         values.put("is_completed", completed ? 1 : 0);
-        return getWritableDatabase().update(TABLE_PRE_PLAN, values, "id=?", new String[]{String.valueOf(id)});
+        int updated = getWritableDatabase().update(TABLE_PRE_PLAN, values, "id=?", new String[]{String.valueOf(id)});
+        if (updated > 0 && plan != null) refreshRegretsForTrip(plan.getTripId());
+        return updated;
     }
 
     public int completePrePlanAndSyncCheckIn(PrePlan plan) {
@@ -697,19 +1006,236 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return total == 0 ? 0 : Math.round(countCompletedPrePlansForTrip(tripId) * 100f / total);
     }
 
+    public long addTimelineItem(TimelineItem item) {
+        return getWritableDatabase().insert(TABLE_TIMELINE_ITEM, null, timelineItemValues(item));
+    }
+
+    public int updateTimelineItem(TimelineItem item) {
+        int updated = getWritableDatabase().update(TABLE_TIMELINE_ITEM, timelineItemValues(item), "id=?", new String[]{String.valueOf(item.getId())});
+        if (updated > 0) {
+            refreshRegretsForTrip(item.getTripId());
+        }
+        return updated;
+    }
+
+    public int deleteTimelineItem(int id) {
+        TimelineItem item = getTimelineItemById(id);
+        int tripId = item == null ? -1 : item.getTripId();
+        int deleted = getWritableDatabase().delete(TABLE_TIMELINE_ITEM, "id=?", new String[]{String.valueOf(id)});
+        if (tripId > 0) {
+            refreshRegretsForTrip(tripId);
+        }
+        return deleted;
+    }
+
+    public TimelineItem getTimelineItemById(int id) {
+        List<TimelineItem> list = new ArrayList<>();
+        readTimelineItems(getReadableDatabase().query(TABLE_TIMELINE_ITEM, null, "id=?", new String[]{String.valueOf(id)}, null, null, null), list);
+        return list.isEmpty() ? null : list.get(0);
+    }
+
+    public List<TimelineItem> getTimelineItemsForTrip(int tripId) {
+        List<TimelineItem> list = new ArrayList<>();
+        readTimelineItems(getReadableDatabase().query(TABLE_TIMELINE_ITEM, null, "trip_id=?", new String[]{String.valueOf(tripId)}, null, null, "day_index ASC, " + timeSlotSortSql() + ", id ASC"), list);
+        return list;
+    }
+
+    public List<TimelineItem> getTimelineItemsForTripDay(int tripId, int dayIndex) {
+        List<TimelineItem> list = new ArrayList<>();
+        readTimelineItems(getReadableDatabase().query(TABLE_TIMELINE_ITEM, null, "trip_id=? AND day_index=?", new String[]{String.valueOf(tripId), String.valueOf(Math.max(0, dayIndex))}, null, null, timeSlotSortSql() + ", id ASC"), list);
+        return list;
+    }
+
+    public int markTimelineItemDoneWithCheckin(int id, String photo, String note, String mood, String time) {
+        ContentValues values = new ContentValues();
+        values.put("status", TimelineItem.STATUS_DONE);
+        values.put("checkin_photo", photo);
+        values.put("checkin_note", note);
+        values.put("checkin_mood", mood);
+        values.put("checkin_time", time);
+        int updated = getWritableDatabase().update(TABLE_TIMELINE_ITEM, values, "id=?", new String[]{String.valueOf(id)});
+        syncRegretsAfterTimelineChange(id);
+        return updated;
+    }
+
+    public int markTimelineItemDone(int id) {
+        ContentValues values = new ContentValues();
+        values.put("status", TimelineItem.STATUS_DONE);
+        values.put("checkin_time", nowDate());
+        int updated = getWritableDatabase().update(TABLE_TIMELINE_ITEM, values, "id=?", new String[]{String.valueOf(id)});
+        syncRegretsAfterTimelineChange(id);
+        return updated;
+    }
+
+    public int markTimelineItemSkipped(int id) {
+        ContentValues values = new ContentValues();
+        values.put("status", TimelineItem.STATUS_SKIPPED);
+        int updated = getWritableDatabase().update(TABLE_TIMELINE_ITEM, values, "id=?", new String[]{String.valueOf(id)});
+        syncRegretsAfterTimelineChange(id);
+        return updated;
+    }
+
+    private void syncRegretsAfterTimelineChange(int timelineItemId) {
+        int tripId = intQueryWithArgs("SELECT trip_id FROM " + TABLE_TIMELINE_ITEM + " WHERE id=?",
+                String.valueOf(timelineItemId));
+        if (tripId > 0) {
+            refreshRegretsForTrip(tripId);
+        }
+    }
+
+    public int countTimelineItemsForTrip(int tripId) {
+        return intQueryWithArgs("SELECT COUNT(*) FROM " + TABLE_TIMELINE_ITEM
+                        + " WHERE trip_id=? AND kind IN (?,?)",
+                String.valueOf(tripId), TimelineItem.KIND_PLAN_FIXED, TimelineItem.KIND_PLAN_PENDING);
+    }
+
+    public int countDoneTimelineItemsForTrip(int tripId) {
+        return intQueryWithArgs("SELECT COUNT(*) FROM " + TABLE_TIMELINE_ITEM
+                        + " WHERE trip_id=? AND status=? AND kind IN (?,?)",
+                String.valueOf(tripId), TimelineItem.STATUS_DONE, TimelineItem.KIND_PLAN_FIXED, TimelineItem.KIND_PLAN_PENDING);
+    }
+
+    public int getTimelineCompletionRate(int tripId) {
+        int total = countTimelineItemsForTrip(tripId);
+        return total == 0 ? 0 : Math.round(countDoneTimelineItemsForTrip(tripId) * 100f / total);
+    }
+
+    public List<TimelineItem> getSkippedTimelineItemsForTrip(int tripId) {
+        List<TimelineItem> list = new ArrayList<>();
+        readTimelineItems(getReadableDatabase().query(TABLE_TIMELINE_ITEM, null, "trip_id=? AND status=?", new String[]{String.valueOf(tripId), TimelineItem.STATUS_SKIPPED}, null, null, "day_index ASC, id ASC"), list);
+        return list;
+    }
+
+    private ContentValues timelineItemValues(TimelineItem item) {
+        ContentValues values = new ContentValues();
+        values.put("trip_id", item.getTripId());
+        values.put("day_index", Math.max(0, item.getDayIndex()));
+        values.put("title", item.getTitle());
+        values.put("type", item.getType());
+        values.put("time_slot", item.getTimeSlot());
+        values.put("status", item.getStatus());
+        values.put("kind", item.getKind());
+        values.put("checkin_photo", item.getCheckinPhoto());
+        values.put("checkin_note", item.getCheckinNote());
+        values.put("checkin_mood", item.getCheckinMood());
+        values.put("checkin_time", item.getCheckinTime());
+        values.put("created_at", item.getCreatedAt());
+        return values;
+    }
+
+    private void readTimelineItems(Cursor cursor, List<TimelineItem> list) {
+        if (cursor != null) {
+            if (cursor.moveToFirst()) {
+                do {
+                    list.add(new TimelineItem(
+                            cursor.getInt(cursor.getColumnIndexOrThrow("id")),
+                            cursor.getInt(cursor.getColumnIndexOrThrow("trip_id")),
+                            getOptionalInt(cursor, "day_index"),
+                            getOptionalString(cursor, "title"),
+                            getOptionalString(cursor, "type"),
+                            getOptionalString(cursor, "time_slot"),
+                            getOptionalString(cursor, "status"),
+                            getOptionalString(cursor, "kind"),
+                            getOptionalString(cursor, "checkin_photo"),
+                            getOptionalString(cursor, "checkin_note"),
+                            getOptionalString(cursor, "checkin_mood"),
+                            getOptionalString(cursor, "checkin_time"),
+                            getOptionalString(cursor, "created_at")));
+                } while (cursor.moveToNext());
+            }
+            cursor.close();
+        }
+    }
+
+    private String timeSlotSortSql() {
+        return "CASE "
+                + "WHEN time_slot GLOB '[0-2][0-9]:[0-5][0-9]' THEN 0 "
+                + "WHEN time_slot = '上午' THEN 1 "
+                + "WHEN time_slot = '下午' THEN 2 "
+                + "WHEN time_slot = '晚上' THEN 3 "
+                + "ELSE 4 END, time_slot";
+    }
+
     private ContentValues prePlanValues(PrePlan plan) {
         ContentValues values = new ContentValues();
         values.put("trip_id", plan.getTripId());
+        values.put("day_index", Math.max(0, plan.getDayIndex()));
         values.put("type", plan.getType());
         values.put("title", plan.getTitle());
         values.put("location", plan.getLocation());
-        values.put("target_date", plan.getTargetDate());
+        values.put("target_date", targetDateForPlan(plan));
         values.put("time_text", plan.getTimeText());
+        values.put("time_section", plan.getTimeSection());
         values.put("note", plan.getNote());
         values.put("is_completed", plan.getIsCompleted());
         values.put("status", plan.getStatus());
         values.put("created_at", plan.getCreatedAt());
         return values;
+    }
+
+    private String timeSectionSortSql() {
+        return "CASE time_section WHEN '上午' THEN 0 WHEN '下午' THEN 1 WHEN '晚上' THEN 2 ELSE 3 END";
+    }
+
+    private String targetDateForPlan(PrePlan plan) {
+        Trip trip = getTripById(plan.getTripId());
+        String calculatedDate = dateForTripDay(trip, plan.getDayIndex());
+        return calculatedDate.isEmpty() ? plan.getTargetDate() : calculatedDate;
+    }
+
+    private String dateForTripDay(Trip trip, int dayIndex) {
+        if (trip == null || isBlank(trip.getStartDate())) return "";
+        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd", Locale.CHINA);
+        try {
+            Date start = format.parse(trip.getStartDate());
+            if (start == null) return "";
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTime(start);
+            calendar.add(Calendar.DATE, Math.max(0, dayIndex));
+            return format.format(calendar.getTime());
+        } catch (ParseException e) {
+            return "";
+        }
+    }
+
+    private int dayIndexForDate(Trip trip, String targetDate) {
+        if (trip == null || isBlank(trip.getStartDate()) || isBlank(targetDate)) return 0;
+        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd", Locale.CHINA);
+        try {
+            Date start = format.parse(trip.getStartDate());
+            Date target = format.parse(targetDate);
+            if (start == null || target == null || target.before(start)) return 0;
+            long diffMillis = target.getTime() - start.getTime();
+            return (int) Math.max(0, diffMillis / (24L * 60L * 60L * 1000L));
+        } catch (ParseException e) {
+            return 0;
+        }
+    }
+
+    private void backfillPrePlanDayIndexes(SQLiteDatabase db) {
+        Cursor cursor = db.query(TABLE_PRE_PLAN, new String[]{"id", "trip_id", "target_date"}, null, null, null, null, null);
+        if (cursor != null) {
+            while (cursor.moveToNext()) {
+                int id = cursor.getInt(cursor.getColumnIndexOrThrow("id"));
+                int tripId = cursor.getInt(cursor.getColumnIndexOrThrow("trip_id"));
+                String targetDate = getOptionalString(cursor, "target_date");
+                Trip trip = getTripByIdForDb(db, tripId);
+                ContentValues values = new ContentValues();
+                values.put("day_index", dayIndexForDate(trip, targetDate));
+                if (isBlank(getOptionalString(cursor, "target_date"))) {
+                    values.put("target_date", dateForTripDay(trip, 0));
+                }
+                values.put("time_section", PrePlan.TIME_SECTION_PENDING);
+                db.update(TABLE_PRE_PLAN, values, "id=?", new String[]{String.valueOf(id)});
+            }
+            cursor.close();
+        }
+    }
+
+    private Trip getTripByIdForDb(SQLiteDatabase db, int id) {
+        List<Trip> trips = new ArrayList<>();
+        readTrips(db.query(TABLE_TRIP, null, "id=?", new String[]{String.valueOf(id)}, null, null, null), trips);
+        return trips.isEmpty() ? null : trips.get(0);
     }
 
     public void ensureDefaultPackingItems(int tripId) {
@@ -904,6 +1430,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
     public int generateRegretsForTrip(int tripId) {
+        clearRegretsForTrip(tripId);
         int inserted = 0;
         Cursor cursor = getReadableDatabase().query(TABLE_PRE_PLAN, null, "trip_id=? AND is_completed=0", new String[]{String.valueOf(tripId)}, null, null, "id ASC");
         if (cursor != null) {
@@ -911,14 +1438,79 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             if (cursor.moveToFirst()) {
                 do {
                     int prePlanId = cursor.getInt(cursor.getColumnIndexOrThrow("id"));
-                    if (hasRegretForPrePlan(prePlanId)) continue;
-                    ContentValues values = new ContentValues();
+                    String title = getOptionalString(cursor, "title");
                     String type = getOptionalString(cursor, "type");
+                    if (hasRegretForPrePlan(prePlanId)) continue;
+                    if (hasRegretForTitleAndType(tripId, title, type)) continue;
+                    ContentValues values = new ContentValues();
                     values.put("trip_id", tripId);
                     values.put("pre_plan_id", prePlanId);
-                    values.put("title", getOptionalString(cursor, "title"));
+                    values.put("title", title);
                     values.put("type", type);
                     values.put("reason", regretReasonForType(type));
+                    values.put("created_at", nowDate());
+                    if (db.insert(TABLE_REGRET_ITEM, null, values) != -1) inserted++;
+                } while (cursor.moveToNext());
+            }
+            cursor.close();
+        }
+        inserted += generateTimelineRegretsForTrip(tripId);
+        return inserted;
+    }
+
+    public int clearRegretsForTrip(int tripId) {
+        return getWritableDatabase().delete(TABLE_REGRET_ITEM, "trip_id=?", new String[]{String.valueOf(tripId)});
+    }
+
+    public int refreshRegretsForTrip(int tripId) {
+        if (!TravelConstants.TripState.REVIEWING.equals(tripStatus(tripId))) {
+            return countRegretsForTrip(tripId);
+        }
+        return generateRegretsForTrip(tripId);
+    }
+
+    public int syncReviewDataForTrip(int tripId) {
+        return refreshRegretsForTrip(tripId);
+    }
+
+    private String tripStatus(int tripId) {
+        Cursor cursor = getReadableDatabase().query(TABLE_TRIP, new String[]{"status"},
+                "id=?", new String[]{String.valueOf(tripId)}, null, null, null, "1");
+        String status = "";
+        if (cursor != null) {
+            if (cursor.moveToFirst()) {
+                status = getOptionalString(cursor, "status");
+            }
+            cursor.close();
+        }
+        return status;
+    }
+
+    private int generateTimelineRegretsForTrip(int tripId) {
+        int inserted = 0;
+        Cursor cursor = getReadableDatabase().query(TABLE_TIMELINE_ITEM, null,
+                "trip_id=? AND status<>? AND kind IN (?,?)",
+                new String[]{
+                        String.valueOf(tripId),
+                        TimelineItem.STATUS_DONE,
+                        TimelineItem.KIND_PLAN_FIXED,
+                        TimelineItem.KIND_PLAN_PENDING
+                },
+                null, null, "day_index ASC, " + timeSlotSortSql() + ", id ASC");
+        if (cursor != null) {
+            SQLiteDatabase db = getWritableDatabase();
+            if (cursor.moveToFirst()) {
+                do {
+                    String title = getOptionalString(cursor, "title");
+                    String type = getOptionalString(cursor, "type");
+                    if (hasRegretForTimelineItem(tripId, title, type)) continue;
+                    if (hasRegretForTitleAndType(tripId, title, type)) continue;
+                    ContentValues values = new ContentValues();
+                    values.put("trip_id", tripId);
+                    values.put("pre_plan_id", 0);
+                    values.put("title", title);
+                    values.put("type", type);
+                    values.put("reason", regretReasonForTimelineKind(getOptionalString(cursor, "kind")));
                     values.put("created_at", nowDate());
                     if (db.insert(TABLE_REGRET_ITEM, null, values) != -1) inserted++;
                 } while (cursor.moveToNext());
@@ -930,6 +1522,25 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     private boolean hasRegretForPrePlan(int prePlanId) {
         return intQueryWithArgs("SELECT COUNT(*) FROM " + TABLE_REGRET_ITEM + " WHERE pre_plan_id=?", String.valueOf(prePlanId)) > 0;
+    }
+
+    private boolean hasRegretForTimelineItem(int tripId, String title, String type) {
+        return intQueryWithArgs("SELECT COUNT(*) FROM " + TABLE_REGRET_ITEM
+                        + " WHERE trip_id=? AND pre_plan_id=0 AND title=? AND type=?",
+                String.valueOf(tripId), title == null ? "" : title, type == null ? "" : type) > 0;
+    }
+
+    private boolean hasRegretForTitleAndType(int tripId, String title, String type) {
+        return intQueryWithArgs("SELECT COUNT(*) FROM " + TABLE_REGRET_ITEM
+                        + " WHERE trip_id=? AND title=? AND type=?",
+                String.valueOf(tripId), title == null ? "" : title, type == null ? "" : type) > 0;
+    }
+
+    private String regretReasonForTimelineKind(String kind) {
+        if (TimelineItem.KIND_PLAN_PENDING.equals(kind)) {
+            return "这个待定计划还没来得及完成，留给下一次旅程继续期待。";
+        }
+        return "这个具体计划还没完成，成为这次旅行里差一点抵达的留白。";
     }
 
     public String regretReasonForType(String type) {
@@ -965,6 +1576,14 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     public int countRegretsForTrip(int tripId) {
         return intQuery("SELECT COUNT(*) FROM " + TABLE_REGRET_ITEM + " WHERE trip_id=?", tripId);
+    }
+
+    public boolean isTimelineRegret(RegretItem item) {
+        return item != null && item.getPrePlanId() == 0;
+    }
+
+    public String regretSourceLabel(RegretItem item) {
+        return isTimelineRegret(item) ? "来自当日记录" : "来自行前准备";
     }
 
     public int countRegretsForUser(int userId) {
