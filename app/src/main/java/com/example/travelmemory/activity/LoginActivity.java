@@ -52,7 +52,6 @@ public class LoginActivity extends AppCompatActivity {
         }
 
         sessionManager.saveLogin(user.getId(), user.getUsername());
-        dbHelper.ensureSeedDataForUser(user.getId());
         Toast.makeText(this, "\u6b22\u8fce\u56de\u6765\uff0c" + user.getNickname(), Toast.LENGTH_SHORT).show();
         Intent intent = new Intent(this, MainActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);

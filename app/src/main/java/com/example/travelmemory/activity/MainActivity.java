@@ -76,7 +76,7 @@ public class MainActivity extends AppCompatActivity {
         rvTrips.setLayoutManager(new LinearLayoutManager(this));
         findViewById(R.id.btn_add_trip).setOnClickListener(v -> startActivity(new Intent(this, TripTypeActivity.class)));
         findViewById(R.id.btn_delete_trip).setOnClickListener(v -> openSelectTrip(TravelConstants.MODE_DELETE_TRIP));
-        findViewById(R.id.layout_search_box).setOnClickListener(v -> openActivity(SearchActivity.class));
+        findViewById(R.id.layout_search_box).setOnClickListener(v -> openActivity(TripSearchActivity.class));
         findViewById(R.id.btn_menu_header).setOnClickListener(v -> openDrawer());
         ivHomeAvatar.setOnClickListener(v -> openDrawer());
         drawerScrim.setOnClickListener(v -> closeDrawer());
@@ -117,9 +117,6 @@ public class MainActivity extends AppCompatActivity {
             goToLogin();
             return;
         }
-        dbHelper.ensureCompleteDemoTripForUser(currentUser.getId());
-        currentUser = dbHelper.getCurrentUser(userId);
-
         String nickname = currentUser.getNickname() == null || currentUser.getNickname().isEmpty()
                 ? "旅行者" : currentUser.getNickname();
         String username = currentUser.getUsername() == null || currentUser.getUsername().isEmpty()

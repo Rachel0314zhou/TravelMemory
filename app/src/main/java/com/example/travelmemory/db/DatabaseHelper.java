@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Locale;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
+    private static final String DEFAULT_NICKNAME = "\u65c5\u884c\u8005";
     private static final String DATABASE_NAME = "travel_memory.db";
     private static final int DATABASE_VERSION = 11;
 
@@ -150,8 +151,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
     public void ensureSeedDataForUser(int userId) {
-        if (userId <= 0 || hasTripsForUser(userId)) return;
-        insertSeedDataForUser(getWritableDatabase(), userId);
+        // Fixed initial demo trips were removed. New users start without injected travel data.
     }
 
     public boolean hasTripsForUser(int userId) {
@@ -160,7 +160,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     public int ensureCompleteDemoTripForUser(int userId) {
         if (userId <= 0) return -1;
-        updateUserProfile(userId, "旅行体验官", 24, "未填写", "美食探店、自然风光、拍照记录", true);
+        ensureDemoProfileDefaults(userId);
         SQLiteDatabase db = getWritableDatabase();
         int tripId = findDemoTripId(userId);
         if (tripId <= 0) {
@@ -190,6 +190,28 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             generateRegretsForTrip(tripId);
         }
         return tripId;
+    }
+
+    private void ensureDemoProfileDefaults(int userId) {
+        User user = getCurrentUser(userId);
+        if (user == null) return;
+
+        ContentValues values = new ContentValues();
+        if (user.getAge() <= 0) {
+            values.put("age", 24);
+        }
+        if (isBlank(user.getGender())) {
+            values.put("gender", "未填写");
+        }
+        if (isBlank(user.getTravelPreference())) {
+            values.put("travel_preference", "美食探店、自然风光、拍照记录");
+        }
+        if (user.getProfileCompleted() == 0) {
+            values.put("profile_completed", 1);
+        }
+        if (values.size() > 0) {
+            getWritableDatabase().update(TABLE_USER, values, "id=?", new String[]{String.valueOf(userId)});
+        }
     }
 
     private int findDemoTripId(int userId) {
@@ -553,8 +575,13 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     public int updateNickname(int userId, String nickname) {
         ContentValues values = new ContentValues();
-        values.put("nickname", nickname);
+        values.put("nickname", blankToDefault(nickname, DEFAULT_NICKNAME));
         return getWritableDatabase().update(TABLE_USER, values, "id=?", new String[]{String.valueOf(userId)});
+    }
+
+    public int saveNicknameForUser(int userId, String nickname) {
+        if (userId <= 0) return 0;
+        return updateNickname(userId, nickname);
     }
 
     public int updatePassword(int userId, String newPassword) {
@@ -571,7 +598,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     public int updateUserProfile(int userId, String nickname, int age, String gender, String travelPreference, boolean completed) {
         ContentValues values = new ContentValues();
-        values.put("nickname", blankToDefault(nickname, "旅行者"));
+        values.put("nickname", blankToDefault(nickname, DEFAULT_NICKNAME));
         values.put("age", Math.max(age, 0));
         values.put("gender", gender == null ? "" : gender);
         values.put("travel_preference", travelPreference == null ? "" : travelPreference);
@@ -592,11 +619,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             cursor.close();
         }
         return matched;
-    }
-
-    public long saveNickname(String nickname) {
-        User existing = getUser();
-        return existing == null ? registerUser("demo", "123456", nickname) : updateNickname(existing.getId(), nickname);
     }
 
     public long addTrip(Trip trip) {
@@ -1826,6 +1848,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
     private String blankToDefault(String value, String fallback) {
-        return value == null || value.trim().isEmpty() ? fallback : value;
+        return isBlank(value) ? fallback : value;
     }
 }

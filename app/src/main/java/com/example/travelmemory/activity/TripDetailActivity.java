@@ -211,7 +211,6 @@ public class TripDetailActivity extends AppCompatActivity {
         addStatCard("住宿", money(dbHelper.getCategoryExpenseAmount(tripId, "住宿")));
         addActionCard("记录花费", "新增一笔旅行支出。", () -> openWithTrip(ExpenseActivity.class));
         addActionCard("查看支出明细", "查看本次旅行的账单列表。", () -> openWithTrip(ExpenseActivity.class));
-        addActionCard("查看支出统计", "进入轻量数据面板。", () -> startActivity(new Intent(this, StatisticsActivity.class)));
     }
 
     private void switchMode(String nextMode) {

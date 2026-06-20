@@ -57,6 +57,28 @@ public class DatabaseUserIsolationTest {
     }
 
     @Test
+    public void tripSearchResultsUseCurrentUserAndKeyword() {
+        int userAId = (int) dbHelper.registerUser("search_alice", "123456", "Alice");
+        int userBId = (int) dbHelper.registerUser("search_bob", "123456", "Bob");
+
+        dbHelper.addTrip(createTrip(userAId, "Beach Weekend", "Xiamen"));
+        dbHelper.addTrip(createTrip(userAId, "Mountain Walk", "Huangshan"));
+        dbHelper.addTrip(createTrip(userBId, "Beach Weekend", "Qingdao"));
+
+        List<com.example.travelmemory.model.SearchResult> aliceBeachResults =
+                dbHelper.searchResultsForUser(userAId, "Beach");
+        List<com.example.travelmemory.model.SearchResult> bobBeachResults =
+                dbHelper.searchResultsForUser(userBId, "Beach");
+
+        assertEquals(1, aliceBeachResults.size());
+        assertEquals("Beach Weekend", aliceBeachResults.get(0).getTitle());
+        assertEquals("Xiamen", aliceBeachResults.get(0).getSubtitle());
+        assertEquals(1, bobBeachResults.size());
+        assertEquals("Qingdao", bobBeachResults.get(0).getSubtitle());
+        assertEquals(2, dbHelper.getTripSearchResultsForUser(userAId).size());
+    }
+
+    @Test
     public void userProfileFieldsArePersistedAndDefaultSafely() {
         int userId = (int) dbHelper.registerUser("profile_user", "123456", "旅行者");
 
@@ -72,6 +94,27 @@ public class DatabaseUserIsolationTest {
         assertEquals("女", dbHelper.getCurrentUser(userId).getGender());
         assertEquals("自然风光", dbHelper.getCurrentUser(userId).getTravelPreference());
         assertEquals(1, dbHelper.getCurrentUser(userId).getProfileCompleted());
+    }
+
+    @Test
+    public void nicknameSaveUsesExplicitCurrentUserOnly() {
+        int userAId = (int) dbHelper.registerUser("alice_nickname", "123456", "Alice");
+        int userBId = (int) dbHelper.registerUser("bob_nickname", "123456", "Bob");
+
+        int rows = dbHelper.saveNicknameForUser(userAId, "Alice New");
+
+        assertEquals(1, rows);
+        assertEquals("Alice New", dbHelper.getCurrentUser(userAId).getNickname());
+        assertEquals("Bob", dbHelper.getCurrentUser(userBId).getNickname());
+    }
+
+    @Test
+    public void seedSetupDoesNotCreateFixedTripsForNewUsers() {
+        int userId = (int) dbHelper.registerUser("seedless_user", "123456", "Seedless");
+
+        dbHelper.ensureSeedDataForUser(userId);
+
+        org.junit.Assert.assertTrue(dbHelper.getTripsForUser(userId).isEmpty());
     }
 
     @Test
@@ -345,6 +388,7 @@ public class DatabaseUserIsolationTest {
         assertEquals(0, dbHelper.countRegretsForTrip(tripId));
     }
 
+    @org.junit.Ignore("Legacy demo trip removed from runtime")
     @Test
     public void completeDemoTripCoversMemoryLoopAndStartsInReviewing() {
         int userId = (int) dbHelper.registerUser("demo_loop_user", "123456", "Demo Loop");
@@ -367,6 +411,7 @@ public class DatabaseUserIsolationTest {
         assertEquals(2, dbHelper.countRegretsForTrip(tripId));
     }
 
+    @org.junit.Ignore("Legacy demo trip removed from runtime")
     @Test
     public void refreshingDemoTripKeepsUserEditedCoverPath() {
         int userId = (int) dbHelper.registerUser("demo_cover_user", "123456", "Demo Cover");
@@ -380,6 +425,26 @@ public class DatabaseUserIsolationTest {
 
         assertEquals(tripId, refreshedTripId);
         assertEquals("/tmp/user_selected_cover.jpg", refreshedTrip.getCoverPath());
+    }
+
+    @Test
+    public void newUsersStartWithoutInjectedTripsUntilTheyCreateOne() {
+        int userId = (int) dbHelper.registerUser("empty_trip_user", "123456", "Empty Trip");
+
+        org.junit.Assert.assertTrue(dbHelper.getTripsForUser(userId).isEmpty());
+        org.junit.Assert.assertFalse(dbHelper.hasTripsForUser(userId));
+    }
+
+    @Test
+    public void creatingTripStillWorksWithoutAnyInjectedSeedTrips() {
+        int userId = (int) dbHelper.registerUser("manual_trip_user", "123456", "Manual Trip");
+        Trip trip = createTrip(userId, "My First Trip", "Suzhou");
+
+        int tripId = (int) dbHelper.addTrip(trip);
+
+        org.junit.Assert.assertTrue(tripId > 0);
+        assertEquals(1, dbHelper.getTripsForUser(userId).size());
+        assertEquals("My First Trip", dbHelper.getTripsForUser(userId).get(0).getName());
     }
 
     private Trip createTrip(int userId, String name, String destination) {

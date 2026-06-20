@@ -95,6 +95,9 @@ public class SearchActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        if (drawerHelper != null) {
+            drawerHelper.refreshUser();
+        }
         if (dbHelper != null && currentUserId > 0) {
             loadCurrentTripPlan();
         }

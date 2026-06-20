@@ -51,25 +51,12 @@
             android:windowSoftInputMode="adjustResize" />
 
         <activity
-            android:name="com.example.travelmemory.activity.PersonalProfileActivity"
-            android:exported="false"
-            android:windowSoftInputMode="adjustResize" />
-
-        <activity
             android:name="com.example.travelmemory.activity.ProfileQuestionnaireActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
         <activity
             android:name="com.example.travelmemory.activity.MemoryListActivity"
-            android:exported="false" />
-
-        <activity
-            android:name="com.example.travelmemory.activity.StatisticsActivity"
-            android:exported="false" />
-
-        <activity
-            android:name="com.example.travelmemory.activity.FeatureHubActivity"
             android:exported="false" />
 
         <activity
@@ -86,20 +73,12 @@
             android:windowSoftInputMode="adjustResize" />
 
         <activity
-            android:name="com.example.travelmemory.activity.DuringTripActivity"
-            android:exported="false" />
-
-        <activity
             android:name="com.example.travelmemory.activity.PackingListActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
         <activity
             android:name="com.example.travelmemory.activity.PlanCompareActivity"
-            android:exported="false" />
-
-        <activity
-            android:name="com.example.travelmemory.activity.PostTripRecordActivity"
             android:exported="false" />
 
         <!-- 3. Add/Edit Trip Form Page -->
@@ -142,14 +121,10 @@
             android:exported="false"
             android:windowSoftInputMode="adjustPan" />
 
-        <!-- 10. Memory Postcard Share and Generation Page -->
         <activity
-            android:name="com.example.travelmemory.activity.MemoryCardActivity"
-            android:exported="false" />
-
-        <activity
-            android:name="com.example.travelmemory.activity.TripRecapActivity"
-            android:exported="false" />
+            android:name="com.example.travelmemory.activity.TripSearchActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
 
         <activity
             android:name="com.example.travelmemory.activity.TripReportActivity"

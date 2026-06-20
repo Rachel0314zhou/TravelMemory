@@ -110,6 +110,7 @@ public class SettingsActivity extends AppCompatActivity {
         tvGender.setText(isBlank(currentUser.getGender()) ? "\u6027\u522b\uff1a\u8fd8\u6ca1\u6709\u586b\u5199" : "\u6027\u522b\uff1a" + currentUser.getGender());
         tvPreference.setText(isBlank(currentUser.getTravelPreference()) ? "\u65c5\u884c\u504f\u597d\uff1a\u8fd8\u6ca1\u6709\u586b\u5199" : "\u65c5\u884c\u504f\u597d\uff1a" + currentUser.getTravelPreference());
         ImageUtils.displayLocalImage(ivAvatar, currentUser.getAvatarPath(), R.drawable.travel_placeholder);
+        drawerHelper.refreshUser();
     }
 
     private boolean isBlank(String value) {
@@ -165,9 +166,14 @@ public class SettingsActivity extends AppCompatActivity {
             Toast.makeText(this, "\u6635\u79f0\u4e0d\u80fd\u4e3a\u7a7a", Toast.LENGTH_SHORT).show();
             return;
         }
-        dbHelper.updateNickname(currentUserId, nickname);
+        int rows = dbHelper.saveNicknameForUser(currentUserId, nickname);
+        if (rows <= 0) {
+            Toast.makeText(this, "\u6635\u79f0\u4fdd\u5b58\u5931\u8d25\uff0c\u8bf7\u91cd\u8bd5", Toast.LENGTH_SHORT).show();
+            return;
+        }
         Toast.makeText(this, "\u6635\u79f0\u5df2\u66f4\u65b0", Toast.LENGTH_SHORT).show();
         loadUser();
+        setResult(RESULT_OK);
     }
 
     private void showPasswordDialog() {

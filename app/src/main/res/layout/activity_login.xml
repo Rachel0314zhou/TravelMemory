@@ -37,7 +37,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:gravity="center"
-            android:text="记录今天，也收藏远方"
+            android:text="记录旅途，也收藏当时的自己"
             android:textColor="@color/text_secondary"
             android:textSize="14sp" />
 
@@ -61,7 +61,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
-                android:text="登录后继续整理你的旅行日记和回忆卡片。"
+                android:text="登录后继续整理你的旅行日记和回忆报告。"
                 android:textColor="@color/text_secondary"
                 android:textSize="13sp" />
 
@@ -126,7 +126,7 @@
                 android:layout_marginTop="10dp"
                 android:background="@drawable/card_rounded_primary_light"
                 android:text="还没有账号？创建一个"
-                android:textColor="@color/primary_dark"
+                android:textColor="@color/white"
                 android:textStyle="bold" />
         </LinearLayout>
 
@@ -136,7 +136,7 @@
             android:layout_marginTop="16dp"
             android:gravity="center"
             android:text="课堂演示账号：demo / 123456"
-            android:textColor="@color/text_secondary"
+            android:textColor="@color/white"
             android:textSize="12sp" />
     </LinearLayout>
 </ScrollView>

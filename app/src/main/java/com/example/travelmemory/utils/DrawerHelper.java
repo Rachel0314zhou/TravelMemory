@@ -35,7 +35,7 @@ public class DrawerHelper {
 
     public void setup() {
         if (drawerScrim == null || sideDrawer == null) return;
-        bindUser();
+        refreshUser();
         drawerScrim.setOnClickListener(v -> close());
         bindMenu(R.id.menu_my_trips, () -> openActivity(MainActivity.class));
         bindMenu(R.id.menu_pre_trip, () -> openSelectTrip(TravelConstants.MODE_PRE_TRIP));
@@ -65,7 +65,7 @@ public class DrawerHelper {
         return drawerOpen;
     }
 
-    private void bindUser() {
+    public void refreshUser() {
         int userId = sessionManager.getCurrentUserId();
         User user = userId <= 0 ? null : dbHelper.getCurrentUser(userId);
         TextView nicknameView = activity.findViewById(R.id.tv_drawer_nickname);

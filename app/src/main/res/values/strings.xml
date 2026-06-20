@@ -1,11 +1,7 @@
 ﻿<resources>
-    <string name="app_name">旅行记忆本</string>
-    <string name="welcome_title">旅行记忆本</string>
+    <string name="app_name">TravelMemory</string>
+    <string name="welcome_title">TravelMemory</string>
     <string name="splash_slogan">记录旅途，也收藏当时的自己</string>
-    <string name="set_nickname">给自己起一个旅行昵称吧</string>
-    <string name="nickname_hint">请输入昵称</string>
-    <string name="enter_app">开启旅行记忆</string>
-    <string name="no_nickname_error">请输入昵称以继续</string>
 
     <string name="hello_user">你好，%s</string>
     <string name="add_trip">新建旅行</string>
@@ -35,7 +31,6 @@
     <string name="menu_photo">相册</string>
     <string name="menu_spots">景点/美食打卡</string>
     <string name="menu_expense">记录花费</string>
-    <string name="menu_generate_card">生成回忆卡片</string>
     <string name="edit_trip">编辑</string>
     <string name="delete_trip">删除</string>
     <string name="delete_confirm_title">确定要删除吗？</string>
@@ -70,9 +65,4 @@
     <string name="filter_mood_label">按心情筛选</string>
     <string name="search_empty">没有找到相关内容，可以试试搜索旅行名称、地点或日记关键词。</string>
 
-    <string name="memory_card_title">旅行回忆卡片</string>
-    <string name="share_card">分享卡片图片</string>
-    <string name="save_to_local">保存到本地</string>
-    <string name="save_success">图片已成功保存到本地：</string>
-    <string name="share_chooser_title">分享我的旅行回忆</string>
 </resources>

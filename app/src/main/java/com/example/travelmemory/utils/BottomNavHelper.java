@@ -21,7 +21,6 @@ public class BottomNavHelper {
     public static final int TAB_SETTINGS = 4;
 
     public static final int TAB_TRIP = TAB_HOME;
-    public static final int TAB_STATISTICS = TAB_SEARCH;
     public static final int TAB_PROFILE = TAB_SETTINGS;
 
     private BottomNavHelper() {}

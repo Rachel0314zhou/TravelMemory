@@ -105,7 +105,11 @@ public class ProfileQuestionnaireActivity extends AppCompatActivity {
             return;
         }
 
-        dbHelper.updateUserProfile(currentUserId, nickname, age, gender, preference, true);
+        int rows = dbHelper.updateUserProfile(currentUserId, nickname, age, gender, preference, true);
+        if (rows <= 0) {
+            Toast.makeText(this, "\u4e2a\u4eba\u8d44\u6599\u4fdd\u5b58\u5931\u8d25\uff0c\u8bf7\u91cd\u8bd5", Toast.LENGTH_SHORT).show();
+            return;
+        }
         Toast.makeText(this, "我的旅行画像已保存", Toast.LENGTH_SHORT).show();
         goHome();
     }

@@ -48,6 +48,9 @@ public class MemoryListActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        if (drawerHelper != null) {
+            drawerHelper.refreshUser();
+        }
         loadTrips();
     }
 

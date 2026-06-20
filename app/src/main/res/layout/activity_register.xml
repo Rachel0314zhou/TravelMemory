@@ -120,7 +120,7 @@
                 android:layout_marginTop="10dp"
                 android:background="@drawable/card_rounded_primary_light"
                 android:text="返回登录"
-                android:textColor="@color/primary_dark"
+                android:textColor="@color/white"
                 android:textStyle="bold" />
         </LinearLayout>
     </LinearLayout>

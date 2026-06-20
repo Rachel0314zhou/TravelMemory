@@ -33,9 +33,10 @@ public class TravelFlowRegressionTest {
 
     @Test
     public void postTripAndPlanCompareUseUnifiedChineseCopy() throws IOException {
-        String postTripLayout = read("src/main/res/layout/activity_post_trip_record.xml");
+        String postTripLayout = "";
         String planCompareLayout = read("src/main/res/layout/activity_plan_compare.xml");
 
+        assertFalse(Files.exists(Paths.get("src/main/res/layout/activity_post_trip_record.xml")));
         assertFalse(postTripLayout.contains("旅行后"));
         assertFalse(postTripLayout.contains("旅行对比"));
         assertFalse(postTripLayout.contains("补记支出"));
@@ -64,28 +65,31 @@ public class TravelFlowRegressionTest {
     }
 
     @Test
-    public void spotsExpenseSearchAndStatsUseUnifiedCopy() throws IOException {
+    public void spotsExpenseSearchUseUnifiedCopyAndStatsPageIsRemoved() throws IOException {
         String spotsJava = read("src/main/java/com/example/travelmemory/activity/SpotsActivity.java");
         String expenseLayout = read("src/main/res/layout/activity_expense.xml");
         String searchLayout = read("src/main/res/layout/activity_search.xml");
-        String statsLayout = read("src/main/res/layout/activity_statistics.xml");
+        String statsLayout = "";
+        String tripDetail = read("src/main/java/com/example/travelmemory/activity/TripDetailActivity.java");
 
         assertFalse(spotsJava.contains("餐厅"));
         assertFalse(spotsJava.contains("博物馆"));
         assertFalse(expenseLayout.contains("@string/expense_title"));
         assertFalse(searchLayout.contains("@string/search_hint"));
         assertFalse(statsLayout.contains("数据统计"));
+        assertFalse(Files.exists(Paths.get("src/main/res/layout/activity_statistics.xml")));
+        assertFalse(Files.exists(Paths.get("src/main/java/com/example/travelmemory/activity/StatisticsActivity.java")));
+        assertFalse(tripDetail.contains("StatisticsActivity.class"));
     }
 
     @Test
     public void tripSelectionAndMemoryPagesUseFriendlyCopy() throws IOException {
         String selectLayout = read("src/main/res/layout/activity_select_trip.xml");
         String memoryListLayout = read("src/main/res/layout/activity_memory_list.xml");
-        String memoryCardLayout = read("src/main/res/layout/activity_memory_card.xml");
 
         assertFalse(selectLayout.contains("还没有旅行，先添加一趟吧"));
         assertFalse(memoryListLayout.contains("暂无旅行记录"));
-        assertFalse(memoryCardLayout.contains("景点："));
+        assertFalse(Files.exists(Paths.get("src/main/res/layout/activity_memory_card.xml")));
     }
 
     @Test
@@ -93,15 +97,17 @@ public class TravelFlowRegressionTest {
         String manifest = read("src/main/AndroidManifest.xml");
         String settings = read("src/main/java/com/example/travelmemory/activity/SettingsActivity.java");
         String register = read("src/main/java/com/example/travelmemory/activity/RegisterActivity.java");
-        String profileLayout = read("src/main/res/layout/activity_personal_profile.xml");
+        String profileLayout = "鎴戠殑鏃呰鐢诲儚 鏃呰鍋忓ソ";
         String questionnaireLayout = read("src/main/res/layout/activity_profile_questionnaire.xml");
 
-        org.junit.Assert.assertTrue(manifest.contains("PersonalProfileActivity"));
+        assertFalse(manifest.contains("PersonalProfileActivity"));
+        assertFalse(Files.exists(Paths.get("src/main/res/layout/activity_personal_profile.xml")));
+        assertFalse(Files.exists(Paths.get("src/main/java/com/example/travelmemory/activity/PersonalProfileActivity.java")));
         org.junit.Assert.assertTrue(manifest.contains("ProfileQuestionnaireActivity"));
         org.junit.Assert.assertTrue(settings.contains("ProfileQuestionnaireActivity.class"));
         org.junit.Assert.assertTrue(register.contains("ProfileQuestionnaireActivity.class"));
-        org.junit.Assert.assertTrue(profileLayout.contains("我的旅行画像"));
-        org.junit.Assert.assertTrue(profileLayout.contains("旅行偏好"));
+        assertFalse(Files.exists(Paths.get("src/main/res/layout/activity_personal_profile.xml")));
+        assertFalse(Files.exists(Paths.get("src/main/res/layout/activity_personal_profile.xml")));
         org.junit.Assert.assertTrue(questionnaireLayout.contains("我的旅行画像"));
         org.junit.Assert.assertTrue(questionnaireLayout.contains("跳过"));
     }
@@ -153,8 +159,6 @@ public class TravelFlowRegressionTest {
         String mainLayout = read("src/main/res/layout/activity_main.xml");
         String planCompareJava = read("src/main/java/com/example/travelmemory/activity/PlanCompareActivity.java");
         String planCompareLayout = read("src/main/res/layout/activity_plan_compare.xml");
-        String memoryCardJava = read("src/main/java/com/example/travelmemory/activity/MemoryCardActivity.java");
-        String memoryCardLayout = read("src/main/res/layout/activity_memory_card.xml");
         String settingsJava = read("src/main/java/com/example/travelmemory/activity/SettingsActivity.java");
         String settingsLayout = read("src/main/res/layout/activity_settings.xml");
         String settingsAdapter = read("src/main/java/com/example/travelmemory/adapter/SettingsAdapter.java");
@@ -167,12 +171,54 @@ public class TravelFlowRegressionTest {
         assertFalse(planCompareJava.contains("btn_generate_regrets"));
         assertFalse(planCompareJava.contains("btn_generate_memory_card"));
         org.junit.Assert.assertTrue(planCompareLayout.contains("tv_compare_summary"));
-        org.junit.Assert.assertTrue(memoryCardJava.contains("showAlbumTab"));
-        org.junit.Assert.assertTrue(memoryCardLayout.contains("tv_card_stat_photos"));
+        assertFalse(Files.exists(Paths.get("src/main/java/com/example/travelmemory/activity/MemoryCardActivity.java")));
+        assertFalse(Files.exists(Paths.get("src/main/res/layout/activity_memory_card.xml")));
         assertFalse(settingsLayout.contains("row_profile"));
         assertFalse(settingsJava.contains("PersonalProfileActivity.class"));
         org.junit.Assert.assertTrue(settingsJava.contains("ProfileQuestionnaireActivity.class"));
         org.junit.Assert.assertTrue(settingsAdapter.contains("class SettingsAdapter"));
+    }
+
+    @Test
+    public void homeSearchBoxOpensTripSearchResultsPage() throws IOException {
+        String manifest = read("src/main/AndroidManifest.xml");
+        String mainJava = read("src/main/java/com/example/travelmemory/activity/MainActivity.java");
+        String tripSearch = read("src/main/java/com/example/travelmemory/activity/TripSearchActivity.java");
+        String tripSearchLayout = read("src/main/res/layout/activity_trip_search.xml");
+
+        org.junit.Assert.assertTrue(manifest.contains("TripSearchActivity"));
+        org.junit.Assert.assertTrue(mainJava.contains("TripSearchActivity.class"));
+        org.junit.Assert.assertTrue(tripSearch.contains("SearchResultAdapter"));
+        org.junit.Assert.assertTrue(tripSearch.contains("searchResultsForUser"));
+        org.junit.Assert.assertTrue(tripSearch.contains("getTripSearchResultsForUser"));
+        org.junit.Assert.assertTrue(tripSearchLayout.contains("rv_trip_search_results"));
+        org.junit.Assert.assertTrue(tripSearchLayout.contains("et_trip_search_keyword"));
+    }
+
+    @Test
+    public void deprecatedMemoryCardPageIsRemovedFromRuntimeFlow() throws IOException {
+        String manifest = read("src/main/AndroidManifest.xml");
+        String strings = read("src/main/res/values/strings.xml");
+
+        assertFalse(Files.exists(Paths.get("src/main/java/com/example/travelmemory/activity/MemoryCardActivity.java")));
+        assertFalse(Files.exists(Paths.get("src/main/res/layout/activity_memory_card.xml")));
+        assertFalse(Files.exists(Paths.get("src/main/java/com/example/travelmemory/utils/MemoryCardUtils.java")));
+        assertFalse(manifest.contains("MemoryCardActivity"));
+        assertFalse(strings.contains("memory_card_title"));
+    }
+
+    @Test
+    public void drawerUserInfoCanRefreshAfterNicknameChanges() throws IOException {
+        String drawerHelper = read("src/main/java/com/example/travelmemory/utils/DrawerHelper.java");
+        String settings = read("src/main/java/com/example/travelmemory/activity/SettingsActivity.java");
+        String search = read("src/main/java/com/example/travelmemory/activity/SearchActivity.java");
+        String memory = read("src/main/java/com/example/travelmemory/activity/MemoryListActivity.java");
+
+        org.junit.Assert.assertTrue(drawerHelper.contains("public void refreshUser()"));
+        org.junit.Assert.assertTrue(drawerHelper.contains("refreshUser();"));
+        org.junit.Assert.assertTrue(settings.contains("drawerHelper.refreshUser();"));
+        org.junit.Assert.assertTrue(search.contains("drawerHelper.refreshUser();"));
+        org.junit.Assert.assertTrue(memory.contains("drawerHelper.refreshUser();"));
     }
 
     @Test
@@ -181,7 +227,7 @@ public class TravelFlowRegressionTest {
         String tripReportJava = read("src/main/java/com/example/travelmemory/activity/TripReportActivity.java");
         String tripReportLayout = read("src/main/res/layout/activity_trip_report.xml");
         String tripDetail = read("src/main/java/com/example/travelmemory/activity/TripDetailActivity.java");
-        String postTrip = read("src/main/java/com/example/travelmemory/activity/PostTripRecordActivity.java");
+        String postTrip = "";
         String memoryAdapter = read("src/main/java/com/example/travelmemory/adapter/MemoryTripAdapter.java");
 
         org.junit.Assert.assertTrue(manifest.contains("TripReportActivity"));
@@ -200,7 +246,7 @@ public class TravelFlowRegressionTest {
         org.junit.Assert.assertTrue(tripReportLayout.contains("btn_report_save"));
         org.junit.Assert.assertTrue(tripReportLayout.contains("btn_report_share"));
         org.junit.Assert.assertTrue(tripDetail.contains("TripNavigator.openReport"));
-        org.junit.Assert.assertTrue(postTrip.contains("TripNavigator.openReport"));
+        assertFalse(Files.exists(Paths.get("src/main/java/com/example/travelmemory/activity/PostTripRecordActivity.java")));
         org.junit.Assert.assertTrue(memoryAdapter.contains("TripNavigator.openReport"));
     }
 
@@ -262,7 +308,8 @@ public class TravelFlowRegressionTest {
         String tripDetail = read("src/main/java/com/example/travelmemory/activity/TripDetailActivity.java");
         String adapter = read("src/main/java/com/example/travelmemory/adapter/MemoryTripAdapter.java");
         String main = read("src/main/java/com/example/travelmemory/activity/MainActivity.java");
-        String database = read("src/main/java/com/example/travelmemory/db/DatabaseHelper.java");
+        String login = read("src/main/java/com/example/travelmemory/activity/LoginActivity.java");
+        String register = read("src/main/java/com/example/travelmemory/activity/RegisterActivity.java");
 
         org.junit.Assert.assertTrue(tripDetail.contains("上传旅行照片"));
         org.junit.Assert.assertTrue(tripDetail.contains("PhotoActivity.class"));
@@ -270,10 +317,20 @@ public class TravelFlowRegressionTest {
         org.junit.Assert.assertTrue(tripReportJava.contains("buildPreferenceSummary"));
         org.junit.Assert.assertTrue(tripReportJava.contains("getTravelPreference"));
         org.junit.Assert.assertTrue(adapter.contains("TravelConstants.formatTripStatusText(trip.getStatus())"));
-        org.junit.Assert.assertTrue(main.contains("ensureCompleteDemoTripForUser"));
-        org.junit.Assert.assertTrue(database.contains("ensureCompleteDemoTripForUser"));
-        org.junit.Assert.assertTrue(database.contains("insertDemoTimelineItem"));
-        org.junit.Assert.assertTrue(database.contains("insertDemoPhoto"));
+        assertFalse(main.contains("ensureCompleteDemoTripForUser"));
+        assertFalse(login.contains("ensureSeedDataForUser"));
+        assertFalse(register.contains("ensureSeedDataForUser"));
+    }
+
+    @Test
+    public void homeAndDemoSetupDoNotHardCodeExperienceOfficerAsNickname() throws IOException {
+        String main = read("src/main/java/com/example/travelmemory/activity/MainActivity.java");
+        String database = read("src/main/java/com/example/travelmemory/db/DatabaseHelper.java");
+        String mainLayout = read("src/main/res/layout/activity_main.xml");
+
+        assertFalse(main.contains("\"旅行体验官\""));
+        assertFalse(database.contains("updateUserProfile(userId, \"旅行体验官\""));
+        assertFalse(mainLayout.contains("旅行体验官"));
     }
 
     @Test
@@ -315,14 +372,14 @@ public class TravelFlowRegressionTest {
     public void tripReportSixthRoundIsRobustForSparseDataAndSharing() throws IOException {
         String tripReportJava = read("src/main/java/com/example/travelmemory/activity/TripReportActivity.java");
         String tripDetail = read("src/main/java/com/example/travelmemory/activity/TripDetailActivity.java");
-        String postTripLayout = read("src/main/res/layout/activity_post_trip_record.xml");
+        String postTripLayout = "";
         String memoryAdapter = read("src/main/java/com/example/travelmemory/adapter/MemoryTripAdapter.java");
         org.junit.Assert.assertTrue(tripReportJava.contains("No Timeline items yet."));
         org.junit.Assert.assertTrue(tripReportJava.contains("No check-in photos yet."));
         org.junit.Assert.assertTrue(tripReportJava.contains("No skipped Timeline items."));
         org.junit.Assert.assertTrue(tripReportJava.contains("renderReportBitmap"));
         org.junit.Assert.assertTrue(tripDetail.contains("TripNavigator.openReport"));
-        org.junit.Assert.assertTrue(postTripLayout.contains("btn_post_report"));
+        assertFalse(Files.exists(Paths.get("src/main/res/layout/activity_post_trip_record.xml")));
         org.junit.Assert.assertTrue(memoryAdapter.contains("TripNavigator.openReport"));
     }
 
@@ -345,7 +402,7 @@ public class TravelFlowRegressionTest {
         String visibleCodeAndResources = read("src/main/java/com/example/travelmemory/activity/PhotoActivity.java")
                 + read("src/main/java/com/example/travelmemory/activity/SpotsActivity.java")
                 + read("src/main/res/layout/activity_pre_trip_plan.xml")
-                + read("src/main/res/layout/activity_during_trip.xml")
+                + ""
                 + read("src/main/res/values/strings.xml");
 
         assertFalse(visibleCodeAndResources.contains("旅行前"));
@@ -389,7 +446,7 @@ public class TravelFlowRegressionTest {
         String main = read("src/main/java/com/example/travelmemory/activity/MainActivity.java");
         String addTrip = read("src/main/java/com/example/travelmemory/activity/AddTripActivity.java");
         String tripType = read("src/main/java/com/example/travelmemory/activity/TripTypeActivity.java");
-        String duringTrip = read("src/main/java/com/example/travelmemory/activity/DuringTripActivity.java");
+        String duringTrip = "";
         String dayRecord = read("src/main/java/com/example/travelmemory/activity/DayRecordActivity.java");
         String dayRecordAdapter = read("src/main/java/com/example/travelmemory/adapter/DayRecordAdapter.java");
         String packing = read("src/main/java/com/example/travelmemory/activity/PackingListActivity.java");
@@ -430,7 +487,7 @@ public class TravelFlowRegressionTest {
         String search = read("src/main/java/com/example/travelmemory/activity/SearchActivity.java");
         String settings = read("src/main/java/com/example/travelmemory/activity/SettingsActivity.java");
         String settingsAdapter = read("src/main/java/com/example/travelmemory/adapter/SettingsAdapter.java");
-        String profile = read("src/main/res/layout/activity_personal_profile.xml");
+        String profile = "鎴戠殑鏃呰鐢诲儚";
         String questionnaire = read("src/main/java/com/example/travelmemory/activity/ProfileQuestionnaireActivity.java");
         String questionnaireLayout = read("src/main/res/layout/activity_profile_questionnaire.xml");
 
@@ -447,7 +504,7 @@ public class TravelFlowRegressionTest {
 
         org.junit.Assert.assertTrue(settings.contains("chooseAvatarFromAlbum"));
         org.junit.Assert.assertTrue(settingsAdapter.contains("我的旅行画像"));
-        org.junit.Assert.assertTrue(profile.contains("我的旅行画像"));
+        assertFalse(Files.exists(Paths.get("src/main/res/layout/activity_personal_profile.xml")));
         org.junit.Assert.assertTrue(questionnaireLayout.contains("我的旅行画像"));
         assertFalse(settingsAdapter.contains("编辑资料"));
         assertFalse(profile.contains("编辑资料"));
@@ -564,7 +621,7 @@ public class TravelFlowRegressionTest {
     public void dailyRecordAndPhotoEntryIsUnified() throws IOException {
         String dayRecord = read("src/main/java/com/example/travelmemory/activity/DayRecordActivity.java");
         String dayRecordLayout = read("src/main/res/layout/activity_day_record.xml");
-        String duringTrip = read("src/main/java/com/example/travelmemory/activity/DuringTripActivity.java");
+        String duringTrip = "";
         String tripDetail = read("src/main/java/com/example/travelmemory/activity/TripDetailActivity.java");
 
         org.junit.Assert.assertTrue(dayRecord.contains("pendingPhotoPaths"));
@@ -612,7 +669,7 @@ public class TravelFlowRegressionTest {
         String report = read("src/main/java/com/example/travelmemory/activity/TripReportActivity.java");
         String tripDetail = read("src/main/java/com/example/travelmemory/activity/TripDetailActivity.java");
         String memoryAdapter = read("src/main/java/com/example/travelmemory/adapter/MemoryTripAdapter.java");
-        String postTrip = read("src/main/java/com/example/travelmemory/activity/PostTripRecordActivity.java");
+        String postTrip = "";
         String selectTrip = read("src/main/java/com/example/travelmemory/activity/SelectTripActivity.java");
         String database = read("src/main/java/com/example/travelmemory/db/DatabaseHelper.java");
         String stateManager = read("src/main/java/com/example/travelmemory/utils/TripStateManager.java");
@@ -626,7 +683,7 @@ public class TravelFlowRegressionTest {
         org.junit.Assert.assertTrue(report.contains("syncReviewDataForTrip(tripId)"));
         org.junit.Assert.assertTrue(tripDetail.contains("TripNavigator.openReport"));
         org.junit.Assert.assertTrue(memoryAdapter.contains("TripNavigator.openReport"));
-        org.junit.Assert.assertTrue(postTrip.contains("TripNavigator.openReport"));
+        assertFalse(Files.exists(Paths.get("src/main/java/com/example/travelmemory/activity/PostTripRecordActivity.java")));
         org.junit.Assert.assertTrue(selectTrip.contains("TripReportAccess.canViewReport"));
         org.junit.Assert.assertTrue(database.contains("syncReviewDataForTrip"));
         org.junit.Assert.assertTrue(database.contains("markPrePlanCompleted"));
@@ -790,13 +847,13 @@ public class TravelFlowRegressionTest {
     public void primaryMintButtonsUseWhiteText() throws IOException {
         String preTripLayout = read("src/main/res/layout/activity_pre_trip_plan.xml");
         String searchLayout = read("src/main/res/layout/activity_search.xml");
-        String duringLayout = read("src/main/res/layout/activity_during_trip.xml");
+        String duringLayout = "android:background=\"@drawable/btn_primary\"\n            android:text=\"缁撴潫鏃呰\"\n            android:textColor=\"@color/white\"";
         String spotsLayout = read("src/main/res/layout/activity_spots.xml");
         String tripDetail = read("src/main/java/com/example/travelmemory/activity/TripDetailActivity.java");
         String search = read("src/main/java/com/example/travelmemory/activity/SearchActivity.java");
 
         org.junit.Assert.assertTrue(preTripLayout.contains("android:id=\"@+id/btn_add_pre_plan\""));
-        org.junit.Assert.assertTrue(duringLayout.contains("android:background=\"@drawable/btn_primary\"\n            android:text=\"结束旅行\"\n            android:textColor=\"@color/white\""));
+        assertFalse(Files.exists(Paths.get("src/main/res/layout/activity_during_trip.xml")));
         org.junit.Assert.assertTrue(spotsLayout.contains("android:background=\"@drawable/btn_primary\"\n                        android:text=\"确认打卡\"\n                        android:textColor=\"@color/white\""));
         org.junit.Assert.assertTrue(searchLayout.contains("android:id=\"@+id/btn_plan_select_trip\""));
         org.junit.Assert.assertTrue(searchLayout.contains("android:textColor=\"@color/white\""));

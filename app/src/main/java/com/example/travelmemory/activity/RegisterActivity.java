@@ -62,7 +62,6 @@ public class RegisterActivity extends AppCompatActivity {
         long result = dbHelper.registerUser(username, password, nickname);
         if (result != -1) {
             sessionManager.saveLogin((int) result, username);
-            dbHelper.ensureSeedDataForUser((int) result);
             Toast.makeText(this, "\u6ce8\u518c\u6210\u529f\uff0c\u5148\u5b8c\u5584\u65c5\u884c\u6863\u6848", Toast.LENGTH_SHORT).show();
             Intent intent = new Intent(this, ProfileQuestionnaireActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
